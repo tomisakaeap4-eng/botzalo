@@ -1,9 +1,9 @@
 /**
- * Search Module - Web search (Tavily) and YouTube tools
+ * Search Module - Web search (You.com) and YouTube tools
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
 import {
-  tavilySearchTool,
+  youSearchTool,
   youtubeChannelTool,
   youtubeSearchTool,
   youtubeVideoTool,
@@ -12,12 +12,12 @@ import {
 export class SearchModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'search',
-    description: 'Web search (Tavily) and YouTube tools',
+    description: 'Web search (You.com) and YouTube tools',
     version: '1.0.0',
   };
 
   private _tools: ITool[] = [
-    tavilySearchTool,
+    youSearchTool,
     youtubeSearchTool,
     youtubeVideoTool,
     youtubeChannelTool,

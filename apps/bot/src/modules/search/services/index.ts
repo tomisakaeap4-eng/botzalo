@@ -1,5 +1,5 @@
 /**
- * Search Services - Tavily Search và YouTube
+ * Search Services - You.com Search và YouTube
  */
-export { tavilySearch } from './tavilyClient.js';
+export { youSearch } from './youClient.js';
 export { getChannelDetails, getVideoDetails, searchYouTube } from './youtubeClient.js';

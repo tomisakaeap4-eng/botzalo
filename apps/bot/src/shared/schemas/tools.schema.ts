@@ -117,28 +117,27 @@ export const YouTubeChannelSchema = z.object({
   channelId: z.string().min(1, 'Thiếu ID channel YouTube'),
 });
 
-// ============ TAVILY SEARCH API ============
+// ============ YOU.COM SEARCH API ============
 
-// Tavily Search params (chấp nhận cả q và query)
-// Thay thế cho Google Custom Search (đã đóng cửa cho khách hàng mới).
-export const TavilySearchSchema = z
+// You.com Search params (chấp nhận cả q và query)
+// Migration từ Tavily (do cùng lý do Google CSE đóng cửa).
+// Free $100 credits ban đầu, không cần thẻ tín dụng.
+export const YouSearchSchema = z
   .object({
     q: z.string().optional(),
     query: z.string().optional(),
-    maxResults: z.coerce.number().min(1).max(20).default(5),
-    topic: z.enum(['general', 'news']).default('general'),
-    searchDepth: z.enum(['basic', 'advanced']).default('basic'),
-    includeDomains: z.array(z.string()).optional(),
-    excludeDomains: z.array(z.string()).optional(),
-    includeAnswer: z.boolean().optional().describe('Trả LLM-synthesized answer (mặc định true)'),
+    count: z.coerce.number().min(1).max(20).default(10),
+    country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2, vd "VN"'),
+    language: z.string().length(2).optional().describe('ISO 639-1, vd "vi"'),
+    safeSearch: z.enum(['on', 'off']).optional(),
+    includeAnswer: z.boolean().optional().describe('Yêu cầu AI answer (tốn thêm credits)'),
   })
   .transform((data) => ({
     q: data.q || data.query || '',
-    maxResults: data.maxResults,
-    topic: data.topic,
-    searchDepth: data.searchDepth,
-    includeDomains: data.includeDomains,
-    excludeDomains: data.excludeDomains,
+    count: data.count,
+    country: data.country,
+    language: data.language,
+    safeSearch: data.safeSearch,
     includeAnswer: data.includeAnswer,
   }))
   .refine((data) => data.q.length > 0, { message: 'Thiếu từ khóa tìm kiếm (q hoặc query)' });
@@ -371,7 +370,7 @@ export const SendFriendRequestSchema = z.object({
  */
 export const TOOL_EXAMPLES: Record<string, string> = {
   // System
-  tavilySearch: `[tool:tavilySearch]{"q":"từ khóa tìm kiếm","maxResults":5}[/tool]`,
+  youSearch: `[tool:youSearch]{"q":"từ khóa tìm kiếm","count":10}[/tool]`,
   youtubeSearch: `[tool:youtubeSearch]{"q":"music video","maxResults":5}[/tool]`,
   youtubeVideo: `[tool:youtubeVideo]{"videoId":"dQw4w9WgXcQ"}[/tool]`,
   youtubeChannel: `[tool:youtubeChannel]{"channelId":"UC..."}[/tool]`,
@@ -503,7 +502,7 @@ export type CreateChartParams = z.infer<typeof CreateChartSchema>;
 export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;
 export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
 export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
-export type TavilySearchParams = z.infer<typeof TavilySearchSchema>;
+export type YouSearchParams = z.infer<typeof YouSearchSchema>;
 
 // Poll types
 export type CreatePollParams = z.infer<typeof CreatePollSchema>;

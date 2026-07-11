@@ -1,0 +1,448 @@
+/**
+ * Config Schema - Zod validation cho settings.json
+ */
+import { z } from 'zod';
+
+// Cloud Debug schema
+const CloudDebugSchema = z.object({
+  enabled: z.boolean().default(false),
+  prefix: z.string().default('#bot'),
+});
+
+// Sleep Mode schema - Tự động offline theo giờ
+export const SleepModeSchema = z.object({
+  enabled: z.boolean().default(false),
+  sleepHour: z.coerce.number().min(0).max(23).default(23), // Giờ bắt đầu ngủ (0-23)
+  wakeHour: z.coerce.number().min(0).max(23).default(6), // Giờ thức dậy (0-23)
+  checkIntervalMs: z.coerce.number().min(60000).default(1800000), // Interval check (default 30 phút)
+});
+
+// Maintenance Mode schema - Chế độ bảo trì
+export const MaintenanceModeSchema = z.object({
+  enabled: z.boolean().default(false),
+  message: z.string().default('🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!'),
+});
+
+// Bot config schema
+export const BotConfigSchema = z.object({
+  name: z.string().default('Trợ lý AI Zalo'),
+  prefix: z.string().default('#bot'),
+  requirePrefix: z.boolean().default(false),
+  rateLimitMs: z.coerce.number().min(0).default(3000),
+  maxTokenHistory: z.coerce.number().min(1000).default(300000),
+  maxInputTokens: z.coerce.number().min(10000).default(200000),
+  selfListen: z.boolean().default(true),
+  logging: z.boolean().default(true),
+  useStreaming: z.boolean().default(true),
+  fileLogging: z.boolean().default(false),
+  logFile: z.string().default('logs/bot.txt'),
+  unauthorizedLogFile: z.string().default('logs/unauthorized.json'),
+  maxToolDepth: z.coerce.number().min(1).max(50).default(10),
+  showToolCalls: z.boolean().default(true),
+  cloudDebug: CloudDebugSchema.optional().default({
+    enabled: false,
+    prefix: '#bot',
+  }),
+  sleepMode: SleepModeSchema.optional().default({
+    enabled: false,
+    sleepHour: 23,
+    wakeHour: 6,
+    checkIntervalMs: 1800000,
+  }),
+  maintenanceMode: MaintenanceModeSchema.optional().default({
+    enabled: false,
+    message: '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!',
+  }),
+});
+
+// Retry config schema
+export const RetryConfigSchema = z.object({
+  maxRetries: z.coerce.number().min(1).max(20).default(3),
+  baseDelayMs: z.coerce.number().min(100).default(2000),
+  retryableStatusCodes: z.array(z.number()).default([503, 429, 500, 502, 504]),
+});
+
+// History loader config schema
+export const HistoryLoaderSchema = z.object({
+  enabled: z.boolean().default(true),
+  loadFromDb: z.boolean().default(true),
+  defaultLimit: z.coerce.number().min(1).default(100),
+  minDelayMs: z.coerce.number().min(100).default(2000),
+  maxDelayMs: z.coerce.number().min(100).default(5000),
+  pageTimeoutMs: z.coerce.number().min(1000).default(10000),
+  loadUser: z.boolean().default(true),
+  loadGroup: z.boolean().default(false),
+});
+
+// Buffer config schema
+export const BufferConfigSchema = z.object({
+  delayMs: z.coerce.number().min(100).default(2500),
+  typingRefreshMs: z.coerce.number().min(100).default(3000),
+});
+
+// Fetch config schema
+export const FetchConfigSchema = z.object({
+  timeoutMs: z.coerce.number().min(1000).default(60000),
+  maxRetries: z.coerce.number().min(1).default(3),
+  retryDelayMs: z.coerce.number().min(100).default(2000),
+  maxTextConvertSizeMB: z.coerce.number().min(1).default(20),
+});
+
+// Modules config schema
+export const ModulesConfigSchema = z.object({
+  system: z.boolean().default(true),
+  chat: z.boolean().default(true),
+  media: z.boolean().default(true),
+  search: z.boolean().default(true),
+  social: z.boolean().default(true),
+  task: z.boolean().default(true),
+});
+
+// Stickers config schema
+export const StickersConfigSchema = z.object({
+  keywords: z.array(z.string()).default([]),
+});
+
+// Logger config schema
+export const LoggerConfigSchema = z.object({
+  maxLinesPerFile: z.coerce.number().min(100).default(1000),
+  logCacheThreshold: z.coerce.number().min(100).default(1000),
+});
+
+// Reaction config schema
+export const ReactionConfigSchema = z.object({
+  debounceMs: z.coerce.number().min(500).default(2000),
+});
+
+// Friend request config schema
+export const FriendRequestConfigSchema = z.object({
+  autoAcceptDelayMinMs: z.coerce.number().min(1000).default(2000),
+  autoAcceptDelayMaxMs: z.coerce.number().min(1000).default(5000),
+});
+
+// Message chunker config schema
+export const MessageChunkerConfigSchema = z.object({
+  maxMessageLength: z.coerce.number().min(500).default(1800),
+});
+
+// Message store config schema
+export const MessageStoreConfigSchema = z.object({
+  maxCachePerThread: z.coerce.number().min(5).default(20),
+  cleanupIntervalMs: z.coerce.number().min(60000).default(1800000),
+  recentMessageWindowMs: z.coerce.number().min(60000).default(300000),
+  maxUndoTimeMs: z.coerce.number().min(30000).default(120000), // 2 phút - giới hạn thời gian thu hồi tin nhắn
+});
+
+// Microsoft Edge TTS config schema
+export const EdgeTtsConfigSchema = z.object({
+  defaultVoice: z.string().default('vi-VN-HoaiMyNeural'),
+  defaultRate: z.string().default('+0%'),
+  defaultVolume: z.string().default('+0%'),
+  defaultPitch: z.string().default('+0Hz'),
+});
+
+// Imagen config schema (native @google/genai)
+// Dùng chung GEMINI_API_KEY pool với Gemini text (cùng Google AI Studio account)
+export const ImagenConfigSchema = z.object({
+  timeoutMs: z.coerce.number().min(1000).default(60000),
+  // 3 Imagen models theo thứ tự ưu tiên, keyManager sẽ rotate
+  models: z
+    .array(z.string())
+    .default([
+      'imagen-4.0-generate-001',
+      'imagen-4.0-ultra-generate-001',
+      'imagen-4.0-fast-generate-001',
+    ]),
+  // Rate limit durations cho key rotation (chia sẻ với Gemini key pool)
+  rateLimitMinuteMs: z.coerce.number().min(60000).default(120000),
+  rateLimitDayMs: z.coerce.number().min(3600000).default(86400000),
+});
+
+// Message sender config schema
+export const MessageSenderConfigSchema = z.object({
+  mediaDelayMs: z.coerce.number().min(100).default(300),
+  chunkDelayMs: z.coerce.number().min(100).default(400),
+});
+
+// Markdown config schema
+export const MarkdownConfigSchema = z.object({
+  mermaidTimeoutMs: z.coerce.number().min(1000).default(30000),
+  groupMediaSizeLimitMB: z.coerce.number().min(1).default(1),
+});
+
+// History config schema
+export const HistoryConfigSchema = z.object({
+  maxTrimAttempts: z.coerce.number().min(10).default(50),
+  maxContextTokens: z.coerce.number().min(10000).default(300000),
+  estimatedCharsPerToken: z.coerce.number().min(1).default(4),
+});
+
+// Database config schema
+export const DatabaseConfigSchema = z.object({
+  path: z.string().default('data/bot.db'),
+  cleanupIntervalMs: z.coerce.number().min(60000).default(3600000),
+  cacheSize: z.coerce.number().min(1000).default(10000),
+});
+
+// Response handler config schema
+export const ResponseHandlerConfigSchema = z.object({
+  reactionDelayMs: z.coerce.number().min(100).default(300),
+  chunkDelayMs: z.coerce.number().min(100).default(300),
+  stickerDelayMs: z.coerce.number().min(100).default(800),
+  cardDelayMs: z.coerce.number().min(100).default(500),
+  messageDelayMinMs: z.coerce.number().min(100).default(500),
+  messageDelayMaxMs: z.coerce.number().min(100).default(1000),
+  imageDelayMs: z.coerce.number().min(100).default(500),
+});
+
+// Group members fetch config schema
+export const GroupMembersFetchConfigSchema = z.object({
+  delayMinMs: z.coerce.number().min(100).default(300),
+  delayMaxMs: z.coerce.number().min(100).default(800),
+  errorDelayMinMs: z.coerce.number().min(100).default(500),
+  errorDelayMaxMs: z.coerce.number().min(100).default(1000),
+});
+
+// Gemini AI config schema
+export const GeminiConfigSchema = z.object({
+  temperature: z.coerce.number().min(0).max(2).default(1),
+  topP: z.coerce.number().min(0).max(1).default(0.95),
+  maxOutputTokens: z.coerce.number().min(1000).default(65536),
+  // Thinking params: `thinkingBudget` dùng cho Gemini 2.5, `thinkingLevel` dùng cho Gemini 3.
+  // Xem https://github.com/googleapis/js-genai/blob/main/codegen_instructions.md (Thinking section)
+  thinkingBudget: z.coerce.number().min(0).default(8192),
+  // Khớp enum ThinkingLevel từ @google/genai — default HIGH theo yêu cầu dự án.
+  thinkingLevel: z.enum(['MINIMAL', 'LOW', 'MEDIUM', 'HIGH']).default('HIGH'),
+  models: z
+    .array(z.string())
+    .default([
+      'models/gemini-3.1-flash-lite',
+    ]),
+  rateLimitMinuteMs: z.coerce.number().min(60000).default(120000),
+  rateLimitDayMs: z.coerce.number().min(3600000).default(86400000),
+});
+
+// Sandbox config schema
+export const SandboxConfigSchema = z.object({
+  installTimeoutMs: z.coerce.number().min(10000).default(60000),
+  executeTimeoutMs: z.coerce.number().min(5000).default(30000),
+});
+
+// Full settings schema
+export const SettingsSchema = z.object({
+  adminUserId: z.string().default(''),
+  bot: BotConfigSchema.optional().default({
+    name: 'Trợ lý AI Zalo',
+    prefix: '#bot',
+    requirePrefix: false,
+    rateLimitMs: 3000,
+    maxTokenHistory: 300000,
+    maxInputTokens: 200000,
+    selfListen: true,
+    logging: true,
+    useStreaming: true,
+    fileLogging: false,
+    logFile: 'logs/bot.txt',
+    unauthorizedLogFile: 'logs/unauthorized.json',
+    maxToolDepth: 10,
+    showToolCalls: true,
+    cloudDebug: { enabled: false, prefix: '#bot' },
+    sleepMode: { enabled: false, sleepHour: 23, wakeHour: 6, checkIntervalMs: 1800000 },
+    maintenanceMode: {
+      enabled: false,
+      message: '🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!',
+    },
+  }),
+  retry: RetryConfigSchema.optional().default({
+    maxRetries: 3,
+    baseDelayMs: 2000,
+    retryableStatusCodes: [503, 429, 500, 502, 504],
+  }),
+  historyLoader: HistoryLoaderSchema.optional().default({
+    enabled: true,
+    loadFromDb: true,
+    defaultLimit: 100,
+    minDelayMs: 2000,
+    maxDelayMs: 5000,
+    pageTimeoutMs: 10000,
+    loadUser: true,
+    loadGroup: false,
+  }),
+  buffer: BufferConfigSchema.optional().default({
+    delayMs: 2500,
+    typingRefreshMs: 3000,
+  }),
+  fetch: FetchConfigSchema.optional().default({
+    timeoutMs: 60000,
+    maxRetries: 3,
+    retryDelayMs: 2000,
+    maxTextConvertSizeMB: 20,
+  }),
+  modules: ModulesConfigSchema.optional().default({
+    system: true,
+    chat: true,
+    media: true,
+    search: true,
+    social: true,
+    task: true,
+  }),
+  stickers: StickersConfigSchema.optional().default({
+    keywords: [],
+  }),
+  allowedUserIds: z.array(z.string()).default([]),
+  logger: LoggerConfigSchema.optional().default({
+    maxLinesPerFile: 1000,
+    logCacheThreshold: 1000,
+  }),
+  reaction: ReactionConfigSchema.optional().default({
+    debounceMs: 2000,
+  }),
+  friendRequest: FriendRequestConfigSchema.optional().default({
+    autoAcceptDelayMinMs: 2000,
+    autoAcceptDelayMaxMs: 5000,
+  }),
+  messageChunker: MessageChunkerConfigSchema.optional().default({
+    maxMessageLength: 1800,
+  }),
+  messageStore: MessageStoreConfigSchema.optional().default({
+    maxCachePerThread: 20,
+    cleanupIntervalMs: 1800000,
+    recentMessageWindowMs: 300000,
+    maxUndoTimeMs: 120000,
+  }),
+  edgeTts: EdgeTtsConfigSchema.optional().default({
+    defaultVoice: 'vi-VN-HoaiMyNeural',
+    defaultRate: '+0%',
+    defaultVolume: '+0%',
+    defaultPitch: '+0Hz',
+  }),
+  imagen: ImagenConfigSchema.optional().default({
+    timeoutMs: 60000,
+    models: [
+      'imagen-4.0-generate-001',
+      'imagen-4.0-ultra-generate-001',
+      'imagen-4.0-fast-generate-001',
+    ],
+    rateLimitMinuteMs: 120000,
+    rateLimitDayMs: 86400000,
+  }),
+  messageSender: MessageSenderConfigSchema.optional().default({
+    mediaDelayMs: 300,
+    chunkDelayMs: 400,
+  }),
+  markdown: MarkdownConfigSchema.optional().default({
+    mermaidTimeoutMs: 30000,
+    groupMediaSizeLimitMB: 1,
+  }),
+  history: HistoryConfigSchema.optional().default({
+    maxTrimAttempts: 50,
+    maxContextTokens: 300000,
+    estimatedCharsPerToken: 4,
+  }),
+  database: DatabaseConfigSchema.optional().default({
+    path: 'data/bot.db',
+    cleanupIntervalMs: 3600000,
+    cacheSize: 10000,
+  }),
+  responseHandler: ResponseHandlerConfigSchema.optional().default({
+    reactionDelayMs: 300,
+    chunkDelayMs: 300,
+    stickerDelayMs: 800,
+    cardDelayMs: 500,
+    messageDelayMinMs: 500,
+    messageDelayMaxMs: 1000,
+    imageDelayMs: 500,
+  }),
+  websocketConnectTimeoutMs: z.coerce.number().min(500).default(2000),
+  groupMembersFetch: GroupMembersFetchConfigSchema.optional().default({
+    delayMinMs: 300,
+    delayMaxMs: 800,
+    errorDelayMinMs: 500,
+    errorDelayMaxMs: 1000,
+  }),
+  gemini: GeminiConfigSchema.optional().default({
+    temperature: 1,
+    topP: 0.95,
+    maxOutputTokens: 65536,
+    thinkingBudget: 8192,
+    thinkingLevel: 'HIGH',
+    models: [
+      'models/gemini-3.1-flash-lite',
+    ],
+    rateLimitMinuteMs: 120000,
+    rateLimitDayMs: 86400000,
+  }),
+  sandbox: SandboxConfigSchema.optional().default({
+    installTimeoutMs: 60000,
+    executeTimeoutMs: 30000,
+  }),
+});
+
+// Type inference từ schema
+export type BotConfig = z.infer<typeof BotConfigSchema>;
+export type RetryConfig = z.infer<typeof RetryConfigSchema>;
+export type HistoryLoaderConfig = z.infer<typeof HistoryLoaderSchema>;
+export type BufferConfig = z.infer<typeof BufferConfigSchema>;
+export type FetchConfig = z.infer<typeof FetchConfigSchema>;
+export type ModulesConfig = z.infer<typeof ModulesConfigSchema>;
+export type LoggerConfig = z.infer<typeof LoggerConfigSchema>;
+export type ReactionConfig = z.infer<typeof ReactionConfigSchema>;
+
+export type FriendRequestConfig = z.infer<typeof FriendRequestConfigSchema>;
+export type MessageChunkerConfig = z.infer<typeof MessageChunkerConfigSchema>;
+
+export type MessageStoreConfig = z.infer<typeof MessageStoreConfigSchema>;
+export type EdgeTtsConfig = z.infer<typeof EdgeTtsConfigSchema>;
+export type ImagenConfig = z.infer<typeof ImagenConfigSchema>;
+export type MessageSenderConfig = z.infer<typeof MessageSenderConfigSchema>;
+export type MarkdownConfig = z.infer<typeof MarkdownConfigSchema>;
+export type HistoryConfig = z.infer<typeof HistoryConfigSchema>;
+export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
+export type ResponseHandlerConfig = z.infer<typeof ResponseHandlerConfigSchema>;
+export type GroupMembersFetchConfig = z.infer<typeof GroupMembersFetchConfigSchema>;
+export type GeminiConfig = z.infer<typeof GeminiConfigSchema>;
+export type SandboxConfig = z.infer<typeof SandboxConfigSchema>;
+export type Settings = z.infer<typeof SettingsSchema>;
+
+// MIME types (static, không cần validate)
+export const MIME_TYPES: Record<string, string> = {
+  // Documents
+  pdf: 'application/pdf',
+  txt: 'text/plain',
+  html: 'text/html',
+  css: 'text/css',
+  csv: 'text/csv',
+  xml: 'application/xml',
+  json: 'application/json',
+  md: 'text/markdown',
+  // Code
+  js: 'text/javascript',
+  ts: 'text/typescript',
+  py: 'text/x-python',
+  java: 'text/x-java',
+  c: 'text/x-c',
+  cpp: 'text/x-c++',
+  cs: 'text/x-csharp',
+  go: 'text/x-go',
+  rb: 'text/x-ruby',
+  php: 'text/x-php',
+  swift: 'text/x-swift',
+  kt: 'text/x-kotlin',
+  rs: 'text/x-rust',
+  // Images
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  // Audio
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  aac: 'audio/aac',
+  ogg: 'audio/ogg',
+  // Video
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  avi: 'video/x-msvideo',
+};

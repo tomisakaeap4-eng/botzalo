@@ -1,0 +1,172 @@
+{
+  "adminUserId": "7307295734920277074",
+  "fetch": {
+    "timeoutMs": 60000,
+    "maxRetries": 3,
+    "retryDelayMs": 2000,
+    "maxTextConvertSizeMB": 20
+  },
+  "buffer": {
+    "delayMs": 2500,
+    "typingRefreshMs": 3000
+  },
+  "bot": {
+    "name": "Trợ lý AI Zalo",
+    "prefix": "#bot",
+    "requirePrefix": false,
+    "rateLimitMs": 0,
+    "maxTokenHistory": 300000,
+    "maxInputTokens": 200000,
+    "selfListen": true,
+    "logging": true,
+    "useStreaming": true,
+    "fileLogging": true,
+    "logFile": "logs/bot.txt",
+    "unauthorizedLogFile": "logs/unauthorized.json",
+    "maxToolDepth": 10,
+    "showToolCalls": false,
+    "cloudDebug": {
+      "enabled": false,
+      "prefix": "#bot"
+    },
+    "sleepMode": {
+      "enabled": true,
+      "sleepHour": 23,
+      "wakeHour": 6,
+      "checkIntervalMs": 1800000
+    },
+    "maintenanceMode": {
+      "enabled": false,
+      "message": "🔧 Bot đang trong chế độ bảo trì. Vui lòng thử lại sau!"
+    }
+  },
+  "historyLoader": {
+    "enabled": false,
+    "loadFromDb": true,
+    "defaultLimit": 1000,
+    "minDelayMs": 2000,
+    "maxDelayMs": 5000,
+    "pageTimeoutMs": 10000,
+    "loadUser": true,
+    "loadGroup": false
+  },
+  "retry": {
+    "maxRetries": 10,
+    "baseDelayMs": 1000,
+    "retryableStatusCodes": [503, 429, 500, 502, 504]
+  },
+  "allowedUserIds": [],
+  "stickers": {
+    "keywords": [
+      "hello",
+      "hi",
+      "love",
+      "haha",
+      "sad",
+      "cry",
+      "angry",
+      "wow",
+      "ok",
+      "thanks",
+      "sorry",
+      "goodnight"
+    ]
+  },
+  "modules": {
+    "system": true,
+    "chat": true,
+    "media": true,
+    "search": true,
+    "social": true,
+    "task": true
+  },
+  "logger": {
+    "maxLinesPerFile": 1000,
+    "logCacheThreshold": 1000
+  },
+  "reaction": {
+    "debounceMs": 2000
+  },
+  "friendRequest": {
+    "autoAcceptDelayMinMs": 2000,
+    "autoAcceptDelayMaxMs": 5000
+  },
+  "messageChunker": {
+    "maxMessageLength": 1800
+  },
+  "messageStore": {
+    "maxCachePerThread": 20,
+    "cleanupIntervalMs": 1800000,
+    "recentMessageWindowMs": 300000,
+    "maxUndoTimeMs": 120000
+  },
+  "userStore": {
+    "cacheTtlMs": 300000
+  },
+  "edgeTts": {
+    "defaultVoice": "vi-VN-HoaiMyNeural",
+    "defaultRate": "+0%",
+    "defaultVolume": "+0%",
+    "defaultPitch": "+0Hz"
+  },
+  "imagen": {
+    "timeoutMs": 60000,
+    "models": [
+      "imagen-4.0-generate-001",
+      "imagen-4.0-ultra-generate-001",
+      "imagen-4.0-fast-generate-001"
+    ],
+    "rateLimitMinuteMs": 120000,
+    "rateLimitDayMs": 86400000
+  },
+  "messageSender": {
+    "mediaDelayMs": 300,
+    "chunkDelayMs": 400
+  },
+  "markdown": {
+    "mermaidTimeoutMs": 30000,
+    "groupMediaSizeLimitMB": 1
+  },
+  "history": {
+    "maxTrimAttempts": 50,
+    "maxContextTokens": 300000,
+    "estimatedCharsPerToken": 4
+  },
+  "database": {
+    "path": "data/bot.db",
+    "cleanupIntervalMs": 3600000,
+    "cacheSize": 10000
+  },
+  "responseHandler": {
+    "reactionDelayMs": 300,
+    "chunkDelayMs": 300,
+    "stickerDelayMs": 800,
+    "cardDelayMs": 500,
+    "messageDelayMinMs": 500,
+    "messageDelayMaxMs": 1000,
+    "imageDelayMs": 500
+  },
+  "websocketConnectTimeoutMs": 2000,
+  "groupMembersFetch": {
+    "delayMinMs": 300,
+    "delayMaxMs": 800,
+    "errorDelayMinMs": 500,
+    "errorDelayMaxMs": 1000
+  },
+  "gemini": {
+    "temperature": 1,
+    "topP": 0.95,
+    "maxOutputTokens": 65536,
+    "thinkingBudget": 8192,
+    "thinkingLevel": "HIGH",
+    "models": [
+      "models/gemini-3.1-flash-lite"
+    ],
+    "rateLimitMinuteMs": 120000,
+    "rateLimitDayMs": 86400000
+  },
+  "sandbox": {
+    "installTimeoutMs": 60000,
+    "executeTimeoutMs": 30000
+  }
+}

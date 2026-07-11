@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.test
+temp/
+qr.png
+credentials.json
+credentials.base64.txt
+/apps/bot/logs/
+
+# Bun
+bun.lockb
+
+# Database
+data/
+# Keep drizzle migrations in git
+# drizzle/

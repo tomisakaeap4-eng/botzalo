@@ -1,20 +1,21 @@
 /**
  * You.com Search API Client
- * Docs: https://api.you.com/
+ * Docs: https://you.com/docs/api-reference/search/v1-search
+ * Portal: https://you.com/platform
  *
  * Migration từ Tavily vì:
  * - Free tier: $100 credits ban đầu (lâu hết hơn Tavily 1k/tháng)
  * - Không cần thẻ tín dụng
- * - Bearer auth đơn giản
+ * - X-API-Key auth đơn giản
  *
- * Lưu ý: response shape dựa trên best-effort docs — verify lại với portal
- * chính thức của You.com.
+ * Endpoint cũ `https://api.you.com/search` đã deprecated — chuyển sang
+ * `https://ydc-index.io/v1/search` (auth: `X-API-Key` header).
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
 import { http } from '../../../shared/utils/httpClient.js';
 
-const YOU_API_URL = 'https://api.you.com/search';
+const YOU_API_URL = 'https://ydc-index.io/v1/search';
 const YOU_API_KEY = process.env.YOU_API_KEY || '';
 
 // ═══════════════════════════════════════════════════
@@ -83,7 +84,8 @@ export async function youSearch(
   const response = await http
     .get(url, {
       headers: {
-        Authorization: `Bearer ${YOU_API_KEY}`,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        'X-API-Key': YOU_API_KEY,
         Accept: 'application/json',
       },
       retry: { statusCodes: [429, 500, 502, 503, 504] },

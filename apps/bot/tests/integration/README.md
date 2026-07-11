@@ -132,7 +132,7 @@ Tests sẽ tự động skip nếu key không có.
 |------------|--------------|------------|
 | Giphy | `GIPHY_API_KEY` | https://developers.giphy.com |
 | YouTube | `YOUTUBE_API_KEY` | https://console.cloud.google.com |
-| You.com Search | `YOU_API_KEY` | https://api.you.com |
+| You.com Search | `YOU_API_KEY` | https://you.com/platform |
 | Diffbot Read URL | `DIFFBOT_TOKEN` | https://www.diffbot.com |
 | Imagen | _(shared `GEMINI_API_KEY` pool)_ | https://aistudio.google.com |
 | E2B | `E2B_API_KEY` | https://e2b.dev |

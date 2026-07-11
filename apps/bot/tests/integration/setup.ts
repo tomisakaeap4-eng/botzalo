@@ -34,8 +34,7 @@ export const API_KEYS = {
   gemini: process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_1,
   giphy: process.env.GIPHY_API_KEY,
   youtube: process.env.YOUTUBE_API_KEY,
-  googleSearch: process.env.GOOGLE_SEARCH_API_KEY,
-  googleSearchCx: process.env.GOOGLE_SEARCH_CX,
+  tavilySearch: process.env.TAVILY_API_KEY,
   // Imagen dùng chung GEMINI_API_KEY pool (không cần key riêng)
   e2b: process.env.E2B_API_KEY,
   edgeTts: true, // Không cần API key, dùng Microsoft Edge TTS service

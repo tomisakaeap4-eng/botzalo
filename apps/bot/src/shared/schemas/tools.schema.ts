@@ -117,21 +117,29 @@ export const YouTubeChannelSchema = z.object({
   channelId: z.string().min(1, 'Thiếu ID channel YouTube'),
 });
 
-// ============ GOOGLE CUSTOM SEARCH API ============
+// ============ TAVILY SEARCH API ============
 
-// Google Search params (chấp nhận cả q và query)
-export const GoogleSearchSchema = z
+// Tavily Search params (chấp nhận cả q và query)
+// Thay thế cho Google Custom Search (đã đóng cửa cho khách hàng mới).
+export const TavilySearchSchema = z
   .object({
     q: z.string().optional(),
     query: z.string().optional(),
-    num: z.coerce.number().min(1).max(10).default(10),
-    start: z.coerce.number().min(1).optional(),
-    searchType: z.enum(['web', 'image']).default('web'),
-    safe: z.enum(['off', 'active']).default('off'),
+    maxResults: z.coerce.number().min(1).max(20).default(5),
+    topic: z.enum(['general', 'news']).default('general'),
+    searchDepth: z.enum(['basic', 'advanced']).default('basic'),
+    includeDomains: z.array(z.string()).optional(),
+    excludeDomains: z.array(z.string()).optional(),
+    includeAnswer: z.boolean().optional().describe('Trả LLM-synthesized answer (mặc định true)'),
   })
   .transform((data) => ({
-    ...data,
     q: data.q || data.query || '',
+    maxResults: data.maxResults,
+    topic: data.topic,
+    searchDepth: data.searchDepth,
+    includeDomains: data.includeDomains,
+    excludeDomains: data.excludeDomains,
+    includeAnswer: data.includeAnswer,
   }))
   .refine((data) => data.q.length > 0, { message: 'Thiếu từ khóa tìm kiếm (q hoặc query)' });
 
@@ -363,7 +371,7 @@ export const SendFriendRequestSchema = z.object({
  */
 export const TOOL_EXAMPLES: Record<string, string> = {
   // System
-  googleSearch: `[tool:googleSearch]{"q":"từ khóa tìm kiếm","num":5}[/tool]`,
+  tavilySearch: `[tool:tavilySearch]{"q":"từ khóa tìm kiếm","maxResults":5}[/tool]`,
   youtubeSearch: `[tool:youtubeSearch]{"q":"music video","maxResults":5}[/tool]`,
   youtubeVideo: `[tool:youtubeVideo]{"videoId":"dQw4w9WgXcQ"}[/tool]`,
   youtubeChannel: `[tool:youtubeChannel]{"channelId":"UC..."}[/tool]`,
@@ -495,7 +503,7 @@ export type CreateChartParams = z.infer<typeof CreateChartSchema>;
 export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;
 export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
 export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
-export type GoogleSearchParams = z.infer<typeof GoogleSearchSchema>;
+export type TavilySearchParams = z.infer<typeof TavilySearchSchema>;
 
 // Poll types
 export type CreatePollParams = z.infer<typeof CreatePollSchema>;

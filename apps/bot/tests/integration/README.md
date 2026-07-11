@@ -103,7 +103,7 @@ tests/integration/
 │   ├── edgeTts.test.ts        # Microsoft Edge TTS (miễn phí)
 │   ├── executeCode.test.ts    # E2B code execution
 │   ├── imagen.test.ts         # Google Imagen AI (native @google/genai)
-│   ├── googleSearch.test.ts   # Google Custom Search
+│   ├── tavilySearch.test.ts   # Tavily web search
 │   ├── memory.test.ts         # Long-term memory
 │   ├── solveMath.test.ts      # Math solver
 │   └── youtube.test.ts        # YouTube Data API
@@ -131,7 +131,7 @@ Tests sẽ tự động skip nếu key không có.
 |------------|--------------|------------|
 | Giphy | `GIPHY_API_KEY` | https://developers.giphy.com |
 | YouTube | `YOUTUBE_API_KEY` | https://console.cloud.google.com |
-| Google Search | `GOOGLE_SEARCH_API_KEY`, `GOOGLE_SEARCH_CX` | https://console.cloud.google.com |
+| Tavily Search | `TAVILY_API_KEY` | https://tavily.com |
 | Imagen | _(shared `GEMINI_API_KEY` pool)_ | https://aistudio.google.com |
 | E2B | `E2B_API_KEY` | https://e2b.dev |
 | ElevenLabs | `ELEVENLABS_API_KEY` | https://elevenlabs.io (legacy)

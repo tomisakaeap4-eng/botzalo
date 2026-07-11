@@ -120,7 +120,7 @@ describe.skipIf(SKIP)('E2E: Full Bot Flow', () => {
       expect(true).toBe(true);
     }, E2E_CONFIG.timeout);
 
-    test('Yêu cầu tìm kiếm - Bot dùng tool googleSearch', async () => {
+    test('Yêu cầu tìm kiếm - Bot dùng tool tavilySearch', async () => {
       if (!api) return;
 
       const testMessage = 'Tìm kiếm: thời tiết Hà Nội hôm nay';

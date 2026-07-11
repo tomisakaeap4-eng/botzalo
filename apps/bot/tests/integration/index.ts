@@ -30,7 +30,7 @@ export const TEST_SUITES = {
   },
   system: {
     youtube: 'YouTube Data API (requires YOUTUBE_API_KEY)',
-    googleSearch: 'Google Custom Search (requires GOOGLE_SEARCH_API_KEY)',
+    tavilySearch: 'Tavily Web Search (requires TAVILY_API_KEY, free 1k/mo)',
     // Imagen native via @google/genai (dùng chung GEMINI_API_KEY pool)
     executeCode: 'E2B Code Execution (requires E2B_API_KEY)',
     edgeTts: 'Microsoft Edge TTS (miễn phí, cần kết nối Internet)',

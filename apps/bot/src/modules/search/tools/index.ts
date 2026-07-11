@@ -1,5 +1,5 @@
 /**
- * Search Tools - Web search (Google) and YouTube
+ * Search Tools - Web search (Tavily) and YouTube
  */
-export { googleSearchTool } from './googleSearch.js';
+export { tavilySearchTool } from './tavilySearch.js';
 export { youtubeChannelTool, youtubeSearchTool, youtubeVideoTool } from './youtube.js';

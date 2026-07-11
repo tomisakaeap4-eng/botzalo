@@ -205,7 +205,7 @@ Bot xử lý: [3 tin nhắn cùng lúc]
 ### Search Module
 | Tool | Mô tả | API cần thiết |
 |------|-------|---------------|
-| `googleSearch` | Tìm kiếm web | Google Search |
+| `tavilySearch` | Tìm kiếm web | Tavily Search |
 | `youtube` | Tìm kiếm/lấy thông tin YouTube | YouTube API |
 | `weather` | Thời tiết | - |
 | `currency` | Tỷ giá tiền tệ | - |

@@ -32,7 +32,6 @@ export const TEST_SUITES = {
     youtube: 'YouTube Data API (requires YOUTUBE_API_KEY)',
     youSearch: 'You.com Web Search (requires YOU_API_KEY, $100 free credits, no CC)',
     readUrl: 'Diffbot URL extraction (thay Gemini urlContext, 10k credits/mo free)',
-    // Imagen native via @google/genai (dùng chung GEMINI_API_KEY pool)
     executeCode: 'E2B Code Execution (requires E2B_API_KEY)',
     edgeTts: 'Microsoft Edge TTS (miễn phí, cần kết nối Internet)',
     createChart: 'Chart.js Chart Creation',

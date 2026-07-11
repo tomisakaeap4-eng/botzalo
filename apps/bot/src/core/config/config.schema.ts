@@ -141,23 +141,6 @@ export const EdgeTtsConfigSchema = z.object({
   defaultPitch: z.string().default('+0Hz'),
 });
 
-// Imagen config schema (native @google/genai)
-// Dùng chung GEMINI_API_KEY pool với Gemini text (cùng Google AI Studio account)
-export const ImagenConfigSchema = z.object({
-  timeoutMs: z.coerce.number().min(1000).default(60000),
-  // 3 Imagen models theo thứ tự ưu tiên, keyManager sẽ rotate
-  models: z
-    .array(z.string())
-    .default([
-      'imagen-4.0-generate-001',
-      'imagen-4.0-ultra-generate-001',
-      'imagen-4.0-fast-generate-001',
-    ]),
-  // Rate limit durations cho key rotation (chia sẻ với Gemini key pool)
-  rateLimitMinuteMs: z.coerce.number().min(60000).default(120000),
-  rateLimitDayMs: z.coerce.number().min(3600000).default(86400000),
-});
-
 // Message sender config schema
 export const MessageSenderConfigSchema = z.object({
   mediaDelayMs: z.coerce.number().min(100).default(300),
@@ -319,16 +302,6 @@ export const SettingsSchema = z.object({
     defaultVolume: '+0%',
     defaultPitch: '+0Hz',
   }),
-  imagen: ImagenConfigSchema.optional().default({
-    timeoutMs: 60000,
-    models: [
-      'imagen-4.0-generate-001',
-      'imagen-4.0-ultra-generate-001',
-      'imagen-4.0-fast-generate-001',
-    ],
-    rateLimitMinuteMs: 120000,
-    rateLimitDayMs: 86400000,
-  }),
   messageSender: MessageSenderConfigSchema.optional().default({
     mediaDelayMs: 300,
     chunkDelayMs: 400,
@@ -397,7 +370,6 @@ export type MessageChunkerConfig = z.infer<typeof MessageChunkerConfigSchema>;
 
 export type MessageStoreConfig = z.infer<typeof MessageStoreConfigSchema>;
 export type EdgeTtsConfig = z.infer<typeof EdgeTtsConfigSchema>;
-export type ImagenConfig = z.infer<typeof ImagenConfigSchema>;
 export type MessageSenderConfig = z.infer<typeof MessageSenderConfigSchema>;
 export type MarkdownConfig = z.infer<typeof MarkdownConfigSchema>;
 export type HistoryConfig = z.infer<typeof HistoryConfigSchema>;

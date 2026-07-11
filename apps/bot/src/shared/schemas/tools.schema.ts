@@ -3,29 +3,6 @@
  */
 import { z } from 'zod';
 
-// ============ GOOGLE IMAGEN AI IMAGE TOOLS ============
-
-// Native Google Imagen 4 generation params (via @google/genai).
-// Model rotation: imagen-4.0-generate → ultra → fast (handled by imagenKeyManager).
-// Docs: https://ai.google.dev/gemini-api/docs/image-generation
-
-// Export literal unions để consumer (imagenClient.ts) dùng chung single source of truth.
-export const IMAGEN_ASPECT_RATIOS = ['1:1', '3:4', '4:3', '9:16', '16:9'] as const;
-export type ImagenAspectRatio = (typeof IMAGEN_ASPECT_RATIOS)[number];
-
-export const IMAGEN_PERSON_GENERATION = ['dont_allow', 'allow_adult', 'allow_all'] as const;
-export type ImagenPersonGeneration = (typeof IMAGEN_PERSON_GENERATION)[number];
-
-export const ImagenImageSchema = z.object({
-  prompt: z
-    .string()
-    .min(1, 'Thiếu prompt mô tả ảnh')
-    .max(2000, 'Prompt quá dài (tối đa 2000 ký tự)'),
-  aspectRatio: z.enum(IMAGEN_ASPECT_RATIOS).default('1:1'),
-  numberOfImages: z.coerce.number().min(1).max(4).default(1),
-  personGeneration: z.enum(IMAGEN_PERSON_GENERATION).default('allow_adult'),
-});
-
 // ============ MICROSOFT EDGE TTS TOOLS ============
 
 // Text to Speech params (Microsoft Edge TTS - miễn phí, không cần API key)
@@ -385,7 +362,6 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   createChart: `[tool:createChart]{"type":"bar","title":"Biểu đồ","labels":["A","B","C"],"datasets":[{"label":"Data","data":[10,20,30]}]}[/tool]`,
   createFile: `[tool:createFile]{"filename":"report.docx","content":"# Tiêu đề\\n\\nNội dung..."}[/tool]`,
   executeCode: `[tool:executeCode]{"code":"print('Hello')","language":"python"}[/tool]`,
-  imagen: `[tool:imagen]{"prompt":"a cute cat","aspectRatio":"1:1"}[/tool]`,
   textToSpeech: `[tool:textToSpeech]{"text":"Xin chào"}[/tool]`,
   solveMath: `[tool:solveMath]{"problem":"Giải $x^2 = 4$","solution":"$x = \\pm 2$"}[/tool]`,
   clearHistory: `[tool:clearHistory]{}[/tool]`,
@@ -504,7 +480,6 @@ export type GetFriendOnlinesParams = z.infer<typeof GetFriendOnlinesSchema>;
 export type GetUserInfoParams = z.infer<typeof GetUserInfoSchema>;
 export type GetGroupMembersParams = z.infer<typeof GetGroupMembersSchema>;
 export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
-export type ImagenImageParams = z.infer<typeof ImagenImageSchema>;
 export type CreateFileParams = z.infer<typeof CreateFileSchema>;
 export type CreateChartParams = z.infer<typeof CreateChartSchema>;
 export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;

@@ -102,7 +102,6 @@ tests/integration/
 │   ├── elevenlabs.test.ts     # ElevenLabs TTS (legacy)
 │   ├── edgeTts.test.ts        # Microsoft Edge TTS (miễn phí)
 │   ├── executeCode.test.ts    # E2B code execution
-│   ├── imagen.test.ts         # Google Imagen AI (native @google/genai)
 │   ├── youSearch.test.ts      # You.com web search
 │   ├── readUrl.test.ts        # Diffbot URL extraction (thay Gemini urlContext)
 │   ├── memory.test.ts         # Long-term memory
@@ -134,7 +133,6 @@ Tests sẽ tự động skip nếu key không có.
 | YouTube | `YOUTUBE_API_KEY` | https://console.cloud.google.com |
 | You.com Search | `YOU_API_KEY` | https://you.com/platform |
 | Diffbot Read URL | `DIFFBOT_TOKEN` | https://www.diffbot.com |
-| Imagen | _(shared `GEMINI_API_KEY` pool)_ | https://aistudio.google.com |
 | E2B | `E2B_API_KEY` | https://e2b.dev |
 | ElevenLabs | `ELEVENLABS_API_KEY` | https://elevenlabs.io (legacy)
 | Edge TTS | _(không cần)_ | Microsoft Edge TTS service (miễn phí)

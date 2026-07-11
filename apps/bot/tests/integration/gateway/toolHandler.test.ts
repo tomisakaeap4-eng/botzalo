@@ -72,9 +72,9 @@ describe('Tool Handler', () => {
 
     it('should handle imageBuffers array', () => {
       const toolCall: ToolCall = {
-        toolName: 'imagen',
+        toolName: 'qrCode',
         params: {},
-        rawTag: '[tool:imagen]',
+        rawTag: '[tool:qrCode]',
       };
       const result: ToolResult = {
         success: true,

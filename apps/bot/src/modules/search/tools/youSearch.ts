@@ -2,8 +2,7 @@
  * Tool: youSearch - Tìm kiếm web bằng You.com API
  * Thay thế cho Tavily. You.com có $100 free credits, không cần CC.
  *
- * Lưu ý: You.com không có image search tách riêng (chỉ /search + /news + /images)
- * — dùng tool `imagen` để tạo ảnh AI khi cần.
+ * Lưu ý: You.com không có image search tách riêng (chỉ /search + /news + /images).
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
@@ -19,7 +18,7 @@ export const youSearchTool: ToolDefinition = {
   description:
     'Tìm kiếm thông tin trên web bằng You.com ($100 free credits, không cần thẻ tín dụng). ' +
     'Trả về danh sách kết quả web (`items`) + news (`news`) gồm title, link, snippet, pageAge. ' +
-    'Lưu ý: KHÔNG hỗ trợ tìm kiếm hình ảnh — dùng tool `imagen` để tạo ảnh AI. ' +
+    'Lưu ý: KHÔNG hỗ trợ tìm kiếm hình ảnh. ' +
     'Ưu tiên dùng khi user hỏi tin tức, sự kiện, thông tin mới, kiến thức chung.',
   parameters: [
     {

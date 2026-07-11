@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
-  MessageSquare,
   Settings,
   FileText,
   Bot,
@@ -31,13 +30,6 @@ const navItems = [
     icon: LayoutDashboard,
     color: 'text-[#58CC02]',
     bgColor: 'bg-[#58CC02]/10',
-  },
-  {
-    title: 'Lịch sử',
-    href: '/history',
-    icon: MessageSquare,
-    color: 'text-[#1CB0F6]',
-    bgColor: 'bg-[#1CB0F6]/10',
   },
   {
     title: 'Nhật ký',

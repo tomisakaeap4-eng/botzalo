@@ -5,6 +5,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { debugLog } from '../../src/core/logger/logger.js';
 
 // Load .env.test explicitly for test environment
 const envTestPath = resolve(process.cwd(), '.env.test');
@@ -37,16 +38,55 @@ export const API_KEYS = {
   googleSearchCx: process.env.GOOGLE_SEARCH_CX,
   // Imagen dùng chung GEMINI_API_KEY pool (không cần key riêng)
   e2b: process.env.E2B_API_KEY,
-  e2b: process.env.E2B_API_KEY,
   edgeTts: true, // Không cần API key, dùng Microsoft Edge TTS service
   zaloCredentials: process.env.ZALO_CREDENTIALS_BASE64,
 };
 
 /**
- * Check if API key is available
+ * Heuristic: is this env value a placeholder/stub, not a real key?
+ * Used so tests can preload keyManager.ts (which calls `process.exit(1)` when no
+ * key is set) without triggering live API calls.
+ *
+ * Recognized stubs:
+ *   - empty string
+ *   - starts with 'stub' / 'your_' / 'placeholder' / '<your'
+ */
+export function isStubKey(value: string | undefined): boolean {
+  if (!value) return true;
+  const v = value.trim();
+  if (!v) return true;
+  return /^(stub|your_|placeholder|<your|change-?me\b|change-?me-)/i.test(v);
+}
+
+/**
+ * Check if API key is available (real, non-stub value).
+ *
+ * Special-case for `zaloCredentials`: the env value is base64-encoded JSON.
+ * A "real" base64 string can still represent stub-shaped credentials; we
+ * decode and inspect `uid` to detect that pattern so live Zalo service test
+ * suites correctly skip without bypassing decode-only credential tests.
  */
 export function hasApiKey(key: keyof typeof API_KEYS): boolean {
-  return !!API_KEYS[key];
+  const value = API_KEYS[key];
+  if (typeof value === 'boolean') return value; // edgeTts = true
+
+  if (
+    key === 'zaloCredentials' &&
+    typeof value === 'string' &&
+    !isStubKey(value)
+  ) {
+    try {
+      const decoded = JSON.parse(Buffer.from(value, 'base64').toString('utf-8'));
+      const uidStr = String(decoded.uid ?? '');
+      if (!uidStr || isStubKey(uidStr)) return false;
+    } catch (err) {
+      // Decode/parse fail — treat as no real credentials so live Zalo suite skips.
+      debugLog('SETUP', `ZALO_CREDENTIALS_BASE64 decode failed (${err}); treating as stub`);
+      return false;
+    }
+  }
+
+  return !isStubKey(value as string | undefined);
 }
 
 /**

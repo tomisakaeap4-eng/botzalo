@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test, mock } from 'bun:test';
-import { forwardMessageTool } from '../../../src/modules/system/tools/social/forwardMessage.js';
+import { forwardMessageTool } from '../../../src/modules/social/tools/forwardMessage.js';
 import type { ToolContext } from '../../../src/shared/types/tools.types.js';
 
 describe('forwardMessage Tool', () => {
@@ -87,7 +87,9 @@ describe('forwardMessage Tool', () => {
     expect(mockApi.forwardMessage).toHaveBeenCalled();
   });
 
-  test('should fail when message is empty', async () => {
+  test('should succeed with empty message (media attachment preview allowed)', async () => {
+    // Source intentionally accepts empty message: media forward không cần text,
+    // Zalo tự render preview từ attachment gốc (xem description: 'có thể để rỗng cho media').
     const result = await forwardMessageTool.execute(
       {
         message: '',
@@ -96,8 +98,8 @@ describe('forwardMessage Tool', () => {
       baseContext,
     );
 
-    expect(result.success).toBe(false);
-    expect(result.error).toContain('Thiếu nội dung');
+    expect(result.success).toBe(true);
+    expect(result.data?.recipients).toEqual(['123']);
   });
 
   test('should fail when targetThreadIds is empty', async () => {

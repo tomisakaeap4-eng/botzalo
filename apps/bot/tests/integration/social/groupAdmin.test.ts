@@ -3,7 +3,12 @@
  * Test chức năng quản trị nhóm Zalo
  */
 
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import {
+  writeFileSync,
+  unlinkSync,
+  existsSync,
+} from 'node:fs';
 import {
   getGroupInfoTool,
   kickMemberTool,
@@ -28,6 +33,27 @@ import {
 } from '../../../src/modules/social/tools/groupAdmin.js';
 import { setThreadType } from '../../../src/shared/utils/message/messageSender.js';
 import { mockToolContext } from '../setup.js';
+
+// Dummy 1×1 PNG dùng làm fixture cho changeGroupAvatar test (fs.existsSync check).
+const AVATAR_FIXTURE = './avatar.png';
+const PNG_1X1_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+// Tạo file trước khi test chạy, xóa sau khi xong để tránh để lại artifact.
+// Track xem suite này tự tạo fixture hay không — chỉ unlink khi chính mình
+// tạo để tránh xóa nhầm avatar.png có sẵn của dev/deployment.
+let createdFixture = false;
+beforeAll(() => {
+  if (!existsSync(AVATAR_FIXTURE)) {
+    writeFileSync(AVATAR_FIXTURE, Buffer.from(PNG_1X1_BASE64, 'base64'));
+    createdFixture = true;
+  }
+});
+afterAll(() => {
+  if (createdFixture && existsSync(AVATAR_FIXTURE)) {
+    unlinkSync(AVATAR_FIXTURE);
+  }
+});
 
 // Mock data
 const mockGroupId = 'group-123456';

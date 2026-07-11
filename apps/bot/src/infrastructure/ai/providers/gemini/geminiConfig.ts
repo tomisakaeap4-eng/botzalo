@@ -6,7 +6,7 @@
  * - https://github.com/googleapis/js-genai/blob/main/codegen_instructions.md
  * - https://googleapis.github.io/js-genai/release_docs/index.html
  */
-import { HarmBlockThreshold, HarmCategory, ThinkingLevel } from '@google/genai';
+import { HarmBlockThreshold, HarmCategory, type ThinkingLevel } from '@google/genai';
 import { CONFIG } from '../../../../core/config/config.js';
 import { debugLog } from '../../../../core/logger/logger.js';
 import { setAIService } from '../../../../shared/types/ai.types.js';
@@ -57,7 +57,11 @@ function isGemini3Model(model: string): boolean {
  * Dùng union để giữ type-safety khi truyền vào SDK.
  * Xem: https://github.com/googleapis/js-genai/blob/main/codegen_instructions.md (Thinking)
  */
-type ThinkingConfig = { thinkingBudget?: number; thinkingLevel?: ThinkingLevel; includeThoughts?: boolean };
+type ThinkingConfig = {
+  thinkingBudget?: number;
+  thinkingLevel?: ThinkingLevel;
+  includeThoughts?: boolean;
+};
 
 /**
  * Build `thinkingConfig` phù hợp với từng dòng model — match chính xác official examples.

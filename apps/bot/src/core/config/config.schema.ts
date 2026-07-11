@@ -213,11 +213,7 @@ export const GeminiConfigSchema = z.object({
   thinkingBudget: z.coerce.number().min(0).default(8192),
   // Khớp enum ThinkingLevel từ @google/genai — default HIGH theo yêu cầu dự án.
   thinkingLevel: z.enum(['MINIMAL', 'LOW', 'MEDIUM', 'HIGH']).default('HIGH'),
-  models: z
-    .array(z.string())
-    .default([
-      'models/gemini-3.1-flash-lite',
-    ]),
+  models: z.array(z.string()).default(['models/gemini-3.1-flash-lite']),
   rateLimitMinuteMs: z.coerce.number().min(60000).default(120000),
   rateLimitDayMs: z.coerce.number().min(3600000).default(86400000),
 });
@@ -366,9 +362,7 @@ export const SettingsSchema = z.object({
     maxOutputTokens: 65536,
     thinkingBudget: 8192,
     thinkingLevel: 'HIGH',
-    models: [
-      'models/gemini-3.1-flash-lite',
-    ],
+    models: ['models/gemini-3.1-flash-lite'],
     rateLimitMinuteMs: 120000,
     rateLimitDayMs: 86400000,
   }),

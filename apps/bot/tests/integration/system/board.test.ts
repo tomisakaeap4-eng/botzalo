@@ -8,7 +8,7 @@ import {
   createNoteTool,
   editNoteTool,
   getListBoardTool,
-} from '../../../src/modules/system/tools/board.js';
+} from '../../../src/modules/social/tools/board.js';
 import { mockToolContext } from '../setup.js';
 
 // Mock data

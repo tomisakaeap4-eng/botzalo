@@ -8,7 +8,7 @@ import {
   createReminderTool,
   getReminderTool,
   removeReminderTool,
-} from '../../../src/modules/system/tools/reminder.js';
+} from '../../../src/modules/social/tools/reminder.js';
 import { mockToolContext } from '../setup.js';
 
 // Mock data

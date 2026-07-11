@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { solveMathTool } from '../../../src/modules/system/tools/task/solveMath.js';
+import { solveMathTool } from '../../../src/modules/task/tools/solveMath.js';
 import { mockToolContext } from '../setup.js';
 
 describe('solveMath Tool Integration', () => {

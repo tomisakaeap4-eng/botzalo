@@ -33,6 +33,15 @@ const DEFAULT_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 /**
+ * Public helper để test files (hoặc production code) lập trình kiểm tra xem
+ * http fetch có đang bị short-circuit không. Dùng cho `describe.skipIf()` trong
+ * test files phụ thuộc vào real API calls (vd QR code, URL shortener).
+ */
+export function isHttpFetchDisabled(): boolean {
+  return shouldDisableHttpFetch();
+}
+
+/**
  * Tạo Ky instance với config mặc định
  */
 export function createHttpClient(options: Options = {}): KyInstance {
@@ -80,9 +89,26 @@ export const http = createHttpClient();
 // ═══════════════════════════════════════════════════
 
 /**
+ * Test-mode short-circuit: khi env `DISABLE_HTTP_FETCH=true` (set bởi tests),
+ * tất cả các fetch* helpers trả null ngay để tránh ky tốn 60s timeout × retries.
+ * Đặc biệt hữu ích cho các test chỉ test message conversion logic, không cần
+ * media thật.
+ */
+function shouldDisableHttpFetch(): boolean {
+  return (
+    Bun.env.DISABLE_HTTP_FETCH === 'true' ||
+    (Bun.env.NODE_ENV === 'test' && Bun.env.DISABLE_HTTP_FETCH !== 'false')
+  );
+}
+
+/**
  * Fetch URL và trả về base64
  */
 export async function fetchAsBase64(url: string): Promise<string | null> {
+  if (shouldDisableHttpFetch()) {
+    debugLog('HTTP', `⊘ Skipped fetch (test mode): ${url.substring(0, 80)}...`);
+    return null;
+  }
   try {
     debugLog('HTTP', `Fetching base64: ${url.substring(0, 80)}...`);
     const response = await http.get(url);
@@ -104,6 +130,10 @@ export async function fetchImageAsBuffer(url: string): Promise<{
   buffer: Buffer;
   mimeType: string;
 } | null> {
+  if (shouldDisableHttpFetch()) {
+    debugLog('HTTP', `⊘ Skipped fetchImageAsBuffer (test mode): ${url.substring(0, 80)}...`);
+    return null;
+  }
   try {
     debugLog('HTTP', `Fetching image buffer: ${url.substring(0, 80)}...`);
 
@@ -138,6 +168,10 @@ export async function fetchImageAsBuffer(url: string): Promise<{
  * Fetch URL và trả về text
  */
 export async function fetchAsText(url: string, maxSize?: number): Promise<string | null> {
+  if (shouldDisableHttpFetch()) {
+    debugLog('HTTP', `⊘ Skipped fetchAsText (test mode): ${url.substring(0, 80)}...`);
+    return null;
+  }
   try {
     debugLog('HTTP', `Fetching text: ${url.substring(0, 80)}...`);
     const response = await http.get(url);
@@ -179,6 +213,13 @@ export async function fetchAsText(url: string, maxSize?: number): Promise<string
  * Fetch file, convert sang text, trả về base64
  */
 export async function fetchAndConvertToTextBase64(url: string): Promise<string | null> {
+  if (shouldDisableHttpFetch()) {
+    debugLog(
+      'HTTP',
+      `⊘ Skipped fetchAndConvertToTextBase64 (test mode): ${url.substring(0, 80)}...`,
+    );
+    return null;
+  }
   try {
     const cfg = getHttpConfig();
     debugLog('HTTP', `Converting to text base64: ${url.substring(0, 80)}...`);
@@ -206,6 +247,13 @@ import { convertDocxToPdfLocal } from '../../modules/media/services/docxToPdfSer
  * Giữ được text + hình ảnh, không cần API key
  */
 export async function fetchDocxAndConvertToPdfBase64(url: string): Promise<string | null> {
+  if (shouldDisableHttpFetch()) {
+    debugLog(
+      'HTTP',
+      `⊘ Skipped fetchDocxAndConvertToPdfBase64 (test mode): ${url.substring(0, 80)}...`,
+    );
+    return null;
+  }
   try {
     const cfg = getHttpConfig();
     debugLog('HTTP', `Converting DOC/DOCX to PDF locally: ${url.substring(0, 80)}...`);

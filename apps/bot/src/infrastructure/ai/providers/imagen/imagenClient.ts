@@ -10,7 +10,6 @@
  * Docs: https://ai.google.dev/gemini-api/docs/image-generation
  *       https://github.com/googleapis/js-genai/blob/main/codegen_instructions.md (Generate Content → Image Generation)
  */
-import { GoogleGenAI } from '@google/genai';
 import { CONFIG } from '../../../../core/config/config.js';
 import { debugLog } from '../../../../core/logger/logger.js';
 import {
@@ -25,7 +24,10 @@ import {
 
 // Enum literals match the Zod schema in `tools.schema.ts` (ImagenImageSchema.personGeneration).
 // Imported from shared schema as single source of truth.
-import type { ImagenAspectRatio, ImagenPersonGeneration } from '../../../../shared/schemas/tools.schema.js';
+import type {
+  ImagenAspectRatio,
+  ImagenPersonGeneration,
+} from '../../../../shared/schemas/tools.schema.js';
 
 export interface ImagenParams {
   prompt: string;

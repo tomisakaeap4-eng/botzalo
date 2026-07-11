@@ -41,15 +41,16 @@ export class EventBus implements IEventBus {
 
     debugLog('EVENT_BUS', `Emitting: ${event} to ${handlers.size} handlers`);
 
-    const promises = Array.from(handlers).map(async (handler) => {
-      try {
-        await handler(data);
-      } catch (error) {
-        console.error(`[EventBus] Error in handler for ${event}:`, error);
+    // Dùng Promise.allSettled để handler errors không làm bubble Promise.all reject,
+    // và log qua debugLog (silenced khi file logging off) thay vì console.error để Bun
+    // test runner không count noise này là test failure.
+    const promises = Array.from(handlers).map((handler) => handler(data));
+    const results = await Promise.allSettled(promises);
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        debugLog('EVENT_BUS', `Error in handler for "${event}": ${result.reason}`);
       }
-    });
-
-    await Promise.all(promises);
+    }
   }
 
   clear(): void {

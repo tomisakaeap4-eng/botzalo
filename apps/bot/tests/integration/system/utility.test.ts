@@ -4,6 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
+import { isHttpFetchDisabled } from '../../../src/shared/utils/httpClient.js';
 import {
   generateQRCode,
   shortenUrl,
@@ -11,7 +12,11 @@ import {
 } from '../../../src/modules/system/services/utilityClient.js';
 import { TEST_CONFIG } from '../setup.js';
 
-describe('QR Code API - goqr.me', () => {
+// Skip các test phụ thuộc vào external HTTP API khi `.env.test` đặt
+// DISABLE_HTTP_FETCH=true. Setup file: apps/bot/.env.test.
+const SKIP_REMOTE = isHttpFetchDisabled();
+
+describe.skipIf(SKIP_REMOTE)('QR Code API - goqr.me', () => {
   test('generateQRCode - basic text', async () => {
     const result = await generateQRCode({ data: 'Hello World' });
 
@@ -81,7 +86,7 @@ describe('QR Code API - goqr.me', () => {
   }, TEST_CONFIG.timeout);
 });
 
-describe('URL Shortener API - is.gd', () => {
+describe.skipIf(SKIP_REMOTE)('URL Shortener API - is.gd', () => {
   test('shortenUrl - basic URL', async () => {
     const result = await shortenUrl('https://www.google.com/search?q=test');
 
@@ -113,7 +118,7 @@ describe('URL Shortener API - is.gd', () => {
   }, TEST_CONFIG.timeout);
 });
 
-describe('URL Shortener API - v.gd (with alias)', () => {
+describe.skipIf(SKIP_REMOTE)('URL Shortener API - v.gd (with alias)', () => {
   test('shortenUrlWithAlias - custom alias', async () => {
     // Use random alias to avoid conflicts
     const randomAlias = `test${Date.now()}`;
@@ -136,7 +141,7 @@ describe('URL Shortener API - v.gd (with alias)', () => {
   }, TEST_CONFIG.timeout);
 });
 
-describe('Utility APIs - Error Handling', () => {
+describe.skipIf(SKIP_REMOTE)('Utility APIs - Error Handling', () => {
   test('shortenUrl - invalid URL format', async () => {
     // is.gd should reject invalid URLs
     const result = await shortenUrl('not-a-valid-url');

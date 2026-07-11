@@ -10,7 +10,7 @@ import {
   getChannelDetails,
   parseDuration,
   formatViewCount,
-} from '../../../src/modules/system/services/youtubeClient.js';
+} from '../../../src/modules/search/services/youtubeClient.js';
 import { hasApiKey, TEST_CONFIG } from '../setup.js';
 
 const SKIP = !hasApiKey('youtube');

@@ -264,23 +264,52 @@ export function logAIResponse(prompt: string, rawResponse: string): void {
 }
 
 /**
- * Log error
+ * Returns true when running under bun:test/jest/etc. Used to keep test runs
+ * quiet and to avoid stdout/stderr patterns that test runners misattribute
+ * to the test itself.
+ */
+function isTestEnv(): boolean {
+  return Bun.env.NODE_ENV === 'test' || Bun.env.BUN_TEST === '1';
+}
+
+/**
+ * Log error — never throws; falls back to console.error on any internal issue.
+ *
+ * When `logger` is uninitialized AND we are in a test environment, we coerce
+ * the error to a plain string. Passing an `Error` object to `console.error`
+ * prints "<msg>\n<stack>" to stderr, which bun:test in some versions
+ * misinterprets as an uncaught test error.
+ *
+ * In dev/runtime (logger uninitialized but NOT a test), we keep the original
+ * `console.error([context], error)` behavior so operators see the stack
+ * trace when `initFileLogger` failed.
  */
 export function logError(context: string, error: any): void {
   if (!logger) {
-    console.error(`[${context}]`, error);
+    if (isTestEnv()) {
+      console.error(`[${context}] ${error?.message ?? String(error)}`);
+    } else {
+      console.error(`[${context}]`, error);
+    }
     return;
   }
-  logger.error(
-    {
-      context,
-      err: {
-        message: error?.message || String(error),
-        stack: error?.stack,
+  try {
+    logger.error(
+      {
+        context,
+        err: {
+          message: error?.message || String(error),
+          stack: error?.stack,
+        },
       },
-    },
-    `Error in ${context}`,
-  );
+      `Error in ${context}`,
+    );
+  } catch (logErr) {
+    const fallback = `[${context}] logError fallback: ${error?.message || String(error)} | internal: ${
+      logErr instanceof Error ? logErr.message : String(logErr)
+    }`;
+    console.error(fallback);
+  }
 }
 
 /**

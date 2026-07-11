@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, beforeAll } from 'bun:test';
-import { googleSearch } from '../../../src/modules/system/services/googleSearchClient.js';
+import { googleSearch } from '../../../src/modules/search/services/googleSearchClient.js';
 import { hasApiKey, API_KEYS, TEST_CONFIG } from '../setup.js';
 
 const SKIP = !hasApiKey('googleSearch') || !API_KEYS.googleSearchCx;

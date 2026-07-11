@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, beforeAll } from 'bun:test';
-import { executeCodeTool } from '../../../src/modules/system/tools/executeCode.js';
+import { executeCodeTool } from '../../../src/modules/task/tools/executeCode.js';
 import { hasApiKey, TEST_CONFIG, mockToolContext } from '../setup.js';
 
 const SKIP = !hasApiKey('e2b');

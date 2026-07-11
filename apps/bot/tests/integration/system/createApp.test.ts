@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { createAppTool } from '../../../src/modules/system/tools/createApp.js';
+import { createAppTool } from '../../../src/modules/task/tools/createApp.js';
 import { TEST_CONFIG, mockToolContext } from '../setup.js';
 
 describe('createApp Tool Integration', () => {

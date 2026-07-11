@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { createChartTool } from '../../../src/modules/system/tools/createChart.js';
+import { createChartTool } from '../../../src/modules/media/tools/createChart.js';
 import { TEST_CONFIG, mockToolContext } from '../setup.js';
 
 describe('Chart Creation Integration', () => {

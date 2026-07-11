@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, beforeEach, mock } from 'bun:test';
-import { flushLogsTool } from '../../../src/modules/system/tools/flushLogs.js';
+import { flushLogsTool } from '../../../src/modules/task/tools/flushLogs.js';
 import { mockToolContext } from '../setup.js';
 
 // Mock logger functions

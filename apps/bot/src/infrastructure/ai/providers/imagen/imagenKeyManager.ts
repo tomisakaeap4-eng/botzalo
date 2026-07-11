@@ -208,7 +208,9 @@ class ImagenKeyManager {
         this.currentModelIndex = nextIndex;
         this.rateLimitedKeys.clear();
         this.currentKeyIndex = 0;
-        console.log(`[ImagenManager] 🔄 Chuyển sang model ${getModelDisplayName(IMAGEN_MODELS[nextIndex])}`);
+        console.log(
+          `[ImagenManager] 🔄 Chuyển sang model ${getModelDisplayName(IMAGEN_MODELS[nextIndex])}`,
+        );
         return true;
       }
     }
@@ -252,7 +254,9 @@ class ImagenKeyManager {
 
   handleRateLimitError(): boolean {
     const { isDaily } = this.markCurrentKeyRateLimited();
-    console.log(`[ImagenManager] ⏳ Key #${this.currentKeyIndex + 1} bị rate limit ${isDaily ? '24h (daily limit)' : '2 phút'}`);
+    console.log(
+      `[ImagenManager] ⏳ Key #${this.currentKeyIndex + 1} bị rate limit ${isDaily ? '24h (daily limit)' : '2 phút'}`,
+    );
 
     if (this.rotateToNextKey()) {
       return true;

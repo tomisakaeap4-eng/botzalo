@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { clearHistoryTool } from '../../../src/modules/system/tools/clearHistory.js';
+import { clearHistoryTool } from '../../../src/modules/chat/tools/clearHistory.js';
 import { mockToolContext } from '../setup.js';
 
 describe('clearHistory Tool Integration', () => {

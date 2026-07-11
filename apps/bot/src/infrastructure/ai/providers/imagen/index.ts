@@ -8,9 +8,9 @@ export {
   type ImagenParams,
 } from './imagenClient.js';
 export {
-  imagenKeyManager,
   IMAGEN_MODELS,
   type ImagenModel,
+  imagenKeyManager,
   isImagenPermissionDeniedError,
   isImagenRateLimitError,
 } from './imagenKeyManager.js';

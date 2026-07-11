@@ -9,7 +9,7 @@ import {
   getPollDetailTool,
   lockPollTool,
   votePollTool,
-} from '../../../src/modules/system/tools/poll.js';
+} from '../../../src/modules/social/tools/poll.js';
 import { mockToolContext } from '../setup.js';
 
 // Mock data

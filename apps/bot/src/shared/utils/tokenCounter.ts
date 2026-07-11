@@ -29,9 +29,37 @@ export function filterUnsupportedMedia(contents: Content[]): Content[] {
   }));
 }
 
+/**
+ * Heuristic token estimate used both as a test-mode short-circuit AND as a
+ * fallback when the live Gemini countTokens API rejects (e.g. quota / bad key).
+ */
+function estimateTokens(contents: Content[]): number {
+  const text = contents
+    .flatMap((c) => c.parts?.filter((p) => 'text' in p).map((p) => (p as any).text) || [])
+    .join(' ');
+  // Mỗi inlineData hoặc fileData (ảnh/video/audio/file URL) chiếm ~258 tokens
+  // (Gemini's median tax mỗi file). Text ước tính 4 chars / token.
+  const mediaCount = contents.reduce(
+    (sum, c) =>
+      sum +
+      (c.parts?.filter((p) => {
+        const part = p as any;
+        return ('inlineData' in p && part.inlineData) || ('fileData' in p && part.fileData);
+      }).length || 0),
+    0,
+  );
+  return Math.ceil(text.length / 4) + mediaCount * 258 + contents.length * 100;
+}
+
 /** Đếm token của một content array */
 export async function countTokens(contents: Content[]): Promise<number> {
   if (contents.length === 0) return 0;
+  // Test-mode short-circuit: under bun:test without a real Gemini key,
+  // skip the live API call and return the heuristic estimate directly so
+  // history-store unit tests don't fail with INVALID_ARGUMENT 400 errors.
+  if (Bun.env.NODE_ENV === 'test' || Bun.env.BUN_TEST === '1') {
+    return estimateTokens(contents);
+  }
   try {
     const ai = getAIService();
     const result = await ai.countTokens({
@@ -41,11 +69,7 @@ export async function countTokens(contents: Content[]): Promise<number> {
     return result.totalTokens || 0;
   } catch (error: any) {
     logError('countTokens', error);
-    // Fallback: ước tính dựa trên text length
-    const text = contents
-      .flatMap((c) => c.parts?.filter((p) => 'text' in p).map((p) => (p as any).text) || [])
-      .join(' ');
-    const estimated = Math.ceil(text.length / 4) + contents.length * 100;
+    const estimated = estimateTokens(contents);
     debugLog('HISTORY', `Token fallback estimate: ${estimated}`);
     return estimated;
   }

@@ -21,9 +21,7 @@ export const ImagenImageSchema = z.object({
     .string()
     .min(1, 'Thiếu prompt mô tả ảnh')
     .max(2000, 'Prompt quá dài (tối đa 2000 ký tự)'),
-  aspectRatio: z
-    .enum(IMAGEN_ASPECT_RATIOS)
-    .default('1:1'),
+  aspectRatio: z.enum(IMAGEN_ASPECT_RATIOS).default('1:1'),
   numberOfImages: z.coerce.number().min(1).max(4).default(1),
   personGeneration: z.enum(IMAGEN_PERSON_GENERATION).default('allow_adult'),
 });

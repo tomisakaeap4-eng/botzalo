@@ -7,7 +7,7 @@ import { describe, test, expect, beforeEach } from 'bun:test';
 import {
   getGroupMembersTool,
   groupMembersCache,
-} from '../../../src/modules/system/tools/getGroupMembers.js';
+} from '../../../src/modules/social/tools/getGroupMembers.js';
 import { mockToolContext } from '../setup.js';
 
 // Mock API response cho group info

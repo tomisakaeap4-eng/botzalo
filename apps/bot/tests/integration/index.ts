@@ -35,7 +35,6 @@ export const TEST_SUITES = {
     executeCode: 'E2B Code Execution (requires E2B_API_KEY)',
     edgeTts: 'Microsoft Edge TTS (miễn phí, cần kết nối Internet)',
     createChart: 'Chart.js Chart Creation',
-    createApp: 'HTML App Creation',
     clearHistory: 'Clear Chat History',
     solveMath: 'Math Solver',
   },

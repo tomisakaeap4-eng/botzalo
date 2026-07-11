@@ -135,97 +135,6 @@ export const GoogleSearchSchema = z
   }))
   .refine((data) => data.q.length > 0, { message: 'Thiếu từ khóa tìm kiếm (q hoặc query)' });
 
-// ============ CREATE APP TOOL ============
-
-// All available CDN libraries
-const APP_LIBRARIES = [
-  // CSS
-  'tailwind',
-  'bootstrap',
-  'daisyui',
-  // JS Frameworks
-  'alpine',
-  'petite',
-  'jquery',
-  // 2D Game Engines
-  'phaser',
-  'pixijs',
-  'kaboom',
-  'kontra',
-  'excalibur',
-  // 3D Engines
-  'three',
-  'babylon',
-  'aframe',
-  'playcanvas',
-  // Physics
-  'matter',
-  'p2',
-  'cannon',
-  // Animation
-  'anime',
-  'gsap',
-  'motion',
-  'lottie',
-  'confetti',
-  'particles',
-  // Charts
-  'chartjs',
-  'apexcharts',
-  'echarts',
-  'd3',
-  // Audio
-  'howler',
-  'tone',
-  'pizzicato',
-  // Utilities
-  'lodash',
-  'dayjs',
-  'axios',
-  'localforage',
-  'uuid',
-  // UI Components
-  'sweetalert',
-  'toastify',
-  'tippy',
-  'sortable',
-  'swiper',
-  // Markdown & Code
-  'marked',
-  'prism',
-  'highlight',
-  'katex',
-  // Icons
-  'fontawesome',
-  'lucide',
-  'boxicons',
-  'heroicons',
-  // Forms
-  'imask',
-  'cleave',
-  // Canvas & Drawing
-  'fabric',
-  'konva',
-  'paper',
-  'rough',
-  // Export
-  'html2canvas',
-  'jspdf',
-  'qrcode',
-  'qrcodejs',
-] as const;
-
-// Create App params (HTML single-file app with CDN libraries)
-export const CreateAppSchema = z.object({
-  name: z.string().min(1, 'Thiếu tên app').max(100, 'Tên app quá dài'),
-  html: z.string().min(1, 'Thiếu nội dung HTML'),
-  css: z.string().optional().default(''),
-  js: z.string().optional().default(''),
-  title: z.string().optional(),
-  description: z.string().optional(),
-  libraries: z.array(z.enum(APP_LIBRARIES)).optional().default(['tailwind']),
-});
-
 // ============ POLL TOOLS ============
 
 // Create Poll params
@@ -339,12 +248,6 @@ export const QRCodeSchema = z.object({
     .min(1, 'Thiếu nội dung cần tạo QR')
     .max(2000, 'Nội dung quá dài (tối đa 2000 ký tự)'),
   size: z.coerce.number().min(100).max(1000).default(300),
-});
-
-// URL Shortener params
-export const UrlShortenerSchema = z.object({
-  url: z.string().url('URL không hợp lệ'),
-  alias: z.string().min(3).max(30).optional(),
 });
 
 // ============ GROUP ADMIN TOOLS ============
@@ -466,7 +369,6 @@ export const TOOL_EXAMPLES: Record<string, string> = {
   youtubeChannel: `[tool:youtubeChannel]{"channelId":"UC..."}[/tool]`,
   createChart: `[tool:createChart]{"type":"bar","title":"Biểu đồ","labels":["A","B","C"],"datasets":[{"label":"Data","data":[10,20,30]}]}[/tool]`,
   createFile: `[tool:createFile]{"filename":"report.docx","content":"# Tiêu đề\\n\\nNội dung..."}[/tool]`,
-  createApp: `[tool:createApp]{"name":"MyApp","html":"<div>Hello</div>","js":"console.log('hi')","libraries":["tailwind"]}[/tool]`,
   executeCode: `[tool:executeCode]{"code":"print('Hello')","language":"python"}[/tool]`,
   imagen: `[tool:imagen]{"prompt":"a cute cat","aspectRatio":"1:1"}[/tool]`,
   textToSpeech: `[tool:textToSpeech]{"text":"Xin chào"}[/tool]`,
@@ -499,7 +401,6 @@ export const TOOL_EXAMPLES: Record<string, string> = {
 
   // Utility tools
   qrCode: `[tool:qrCode]{"data":"https://example.com","size":300}[/tool]`,
-  urlShortener: `[tool:urlShortener]{"url":"https://example.com/very-long-url"}[/tool]`,
 
   // Group Admin tools - Info
   getGroupInfo: `[tool:getGroupInfo]{}[/tool]`,
@@ -594,7 +495,6 @@ export type CreateChartParams = z.infer<typeof CreateChartSchema>;
 export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;
 export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
 export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
-export type CreateAppParams = z.infer<typeof CreateAppSchema>;
 export type GoogleSearchParams = z.infer<typeof GoogleSearchSchema>;
 
 // Poll types
@@ -618,7 +518,6 @@ export type ForwardMessageParams = z.infer<typeof ForwardMessageSchema>;
 
 // Utility types
 export type QRCodeParams = z.infer<typeof QRCodeSchema>;
-export type UrlShortenerParams = z.infer<typeof UrlShortenerSchema>;
 
 // Group Admin types
 export type GetGroupInfoParams = z.infer<typeof GetGroupInfoSchema>;

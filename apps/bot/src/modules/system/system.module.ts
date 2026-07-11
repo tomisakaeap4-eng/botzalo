@@ -2,16 +2,16 @@
  * System Module - Core utility tools
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
-import { qrCodeTool, urlShortenerTool } from './tools/utility/index.js';
+import { qrCodeTool } from './tools/utility/index.js';
 
 export class SystemModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'system',
-    description: 'Core utility tools (QR code, URL shortener)',
+    description: 'Core utility tools (QR code)',
     version: '1.0.0',
   };
 
-  private _tools: ITool[] = [qrCodeTool, urlShortenerTool];
+  private _tools: ITool[] = [qrCodeTool];
 
   get tools(): ITool[] {
     return this._tools;

@@ -195,13 +195,6 @@ const outputHandlers: Record<string, OutputHandler> = {
       await sendImages(api, threadId, result.data.imageBuffers, 'qrcode');
     }
   },
-
-  // createApp → send HTML file
-  createApp: async (api, threadId, result) => {
-    if (result.data?.fileBuffer) {
-      await sendDocument(api, threadId, result.data.fileBuffer, result.data.filename);
-    }
-  },
 };
 
 // ═══════════════════════════════════════════════════

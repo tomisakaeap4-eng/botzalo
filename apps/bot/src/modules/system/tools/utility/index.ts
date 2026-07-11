@@ -1,5 +1,4 @@
 /**
- * Utility Tools - QR codes, URL shortener
+ * Utility Tools - QR codes
  */
 export { qrCodeTool } from './qrCode.js';
-export { urlShortenerTool } from './urlShortener.js';

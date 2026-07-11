@@ -98,7 +98,6 @@ tests/integration/
 ├── system/                     # System tools
 │   ├── clearHistory.test.ts   # Clear chat history
 │   ├── compdf.test.ts         # DOCX to PDF
-│   ├── createApp.test.ts      # HTML app creation
 │   ├── createChart.test.ts    # Chart.js charts
 │   ├── elevenlabs.test.ts     # ElevenLabs TTS (legacy)
 │   ├── edgeTts.test.ts        # Microsoft Edge TTS (miễn phí)

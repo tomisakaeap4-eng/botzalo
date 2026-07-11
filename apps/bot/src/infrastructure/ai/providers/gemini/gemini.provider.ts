@@ -20,7 +20,12 @@ import {
   DEFAULT_RESPONSE,
   parseAIResponse,
 } from '../../../../shared/types/config.schema.js';
-import { checkInputTokens } from '../../../../shared/utils/tokenCounter.js';
+import { setTokenCache } from '../../../../shared/utils/history/history.js';
+import {
+  checkInputTokens,
+  extractTokenUsage,
+  logTokenUsage,
+} from '../../../../shared/utils/tokenCounter.js';
 import {
   buildMessageParts,
   deleteChatSession,
@@ -125,6 +130,17 @@ export async function generateContent(
       }
 
       const response = await chat.sendMessage({ message: parts });
+
+      // Log token usage từ response.usageMetadata (chính xác — không cần gọi countTokens API)
+      const usage = extractTokenUsage(response?.usageMetadata);
+      if (usage) {
+        const logThreadId = threadId || sessionId;
+        logTokenUsage(logThreadId, usage, keyManager.getCurrentModelName());
+        if (threadId && usage.total != null) {
+          setTokenCache(threadId, usage.total);
+        }
+      }
+
       const rawText = response.text || '{}';
 
       if (attempt > 0) {

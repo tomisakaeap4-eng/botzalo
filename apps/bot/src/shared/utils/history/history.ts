@@ -47,4 +47,5 @@ export {
   saveResponseToHistory,
   saveToHistory,
   saveToolResultToHistory,
+  setTokenCache,
 } from './historyStore.js';

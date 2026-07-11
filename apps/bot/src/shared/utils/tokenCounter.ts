@@ -1,7 +1,10 @@
 /**
  * Token Counter - Đếm token cho Gemini API
  */
-import type { Content } from '@google/genai';
+import type {
+  Content,
+  GenerateContentResponseUsageMetadata,
+} from '@google/genai';
 import { debugLog, logError } from '../../core/logger/logger.js';
 import { getGeminiModel } from '../../infrastructure/ai/providers/gemini/geminiConfig.js';
 import { getAIService } from '../types/ai.types.js';
@@ -81,6 +84,84 @@ export interface TokenCheckResult {
   totalTokens: number;
   maxTokens: number;
   message?: string;
+}
+
+// ═══════════════════════════════════════════════════
+// TOKEN USAGE DISPLAY — Lấy từ response.usageMetadata
+// (Google Gemini SDK trả free, không cần gọi API riêng)
+// ═══════════════════════════════════════════════════
+
+/** Snapshot token usage từ response.usageMetadata (Google @google/genai v2.x) */
+export interface TokenUsage {
+  /** Input tokens (promptTokenCount) */
+  prompt?: number;
+  /** Output tokens (candidatesTokenCount) */
+  output?: number;
+  /** Thinking tokens (thoughtsTokenCount, Gemini 2.5/3) */
+  thoughts?: number;
+  /** Cached tokens (cachedContentTokenCount) */
+  cached?: number;
+  /** Total tokens (totalTokenCount) */
+  total?: number;
+}
+
+/** Extract token usage từ `response.usageMetadata` của Gemini SDK (an toàn khi undefined).
+ * Caller truyền `response.usageMetadata` (hoặc `chunk.usageMetadata` cho stream). */
+export function extractTokenUsage(
+  usage: GenerateContentResponseUsageMetadata | undefined | null,
+): TokenUsage | null {
+  if (!usage) return null;
+  return {
+    prompt: usage.promptTokenCount,
+    output: usage.candidatesTokenCount,
+    thoughts: usage.thoughtsTokenCount,
+    cached: usage.cachedContentTokenCount,
+    total: usage.totalTokenCount,
+  };
+}
+
+/** Format số ngắn gọn: 1050 → "1.1k", 56700 → "57k", 2_500_000 → "2.5M" */
+export function formatCompactNumber(n?: number): string {
+  if (n == null) return '0';
+  if (n < 0) return '0';
+  if (n < 1000) return n.toString();
+  if (n < 10_000) return `${(n / 1000).toFixed(1)}k`;
+  if (n < 1_000_000) return `${Math.round(n / 1000)}k`;
+  return `${(n / 1_000_000).toFixed(1)}M`;
+}
+
+/** Format usage thành chuỗi compact cho log:
+ * "in=1.2k, out=567, thinking=234, total=2.0k" — skip thinking/cached nếu = 0 */
+export function formatTokenUsage(usage: TokenUsage | null | undefined): string {
+  if (!usage) return '';
+  const parts: string[] = [
+    `in=${formatCompactNumber(usage.prompt)}`,
+    `out=${formatCompactNumber(usage.output)}`,
+  ];
+  if (usage.thoughts && usage.thoughts > 0) {
+    parts.push(`thinking=${formatCompactNumber(usage.thoughts)}`);
+  }
+  if (usage.cached && usage.cached > 0) {
+    parts.push(`cached=${formatCompactNumber(usage.cached)}`);
+  }
+  parts.push(`total=${formatCompactNumber(usage.total)}`);
+  return parts.join(', ');
+}
+
+/** Log token usage ra console sau khi AI phản hồi xong (nếu usageMetadata có sẵn).
+ * Format: `[Gemini] 📊 Thread <id> | in=X, out=Y, total=Z (model=name)` */
+export function logTokenUsage(
+  threadId: string,
+  usage: TokenUsage | null | undefined,
+  modelName?: string,
+): void {
+  // Skip log khi usageMetadata missing/total=0 (safety block, error response, empty response, test mock, ...)
+  if (!usage || usage.total == null || usage.total === 0) {
+    debugLog('TOKEN', `Thread ${threadId} | usage=N/A (total=${usage?.total ?? 'N/A'})`);
+    return;
+  }
+  const modelSuffix = modelName ? ` (model=${modelName})` : '';
+  console.log(`[Gemini] 📊 Thread ${threadId} | ${formatTokenUsage(usage)}${modelSuffix}`);
 }
 
 /**

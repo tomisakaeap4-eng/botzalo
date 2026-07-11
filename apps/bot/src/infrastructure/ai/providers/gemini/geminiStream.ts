@@ -1,7 +1,10 @@
 /**
  * Gemini Stream - Xử lý streaming responses
  */
-import type { Content } from '@google/genai';
+import type {
+  Content,
+  GenerateContentResponseUsageMetadata,
+} from '@google/genai';
 import { CONFIG } from '../../../../core/config/config.js';
 import {
   debugLog,
@@ -10,8 +13,13 @@ import {
   logError,
   logSystemPrompt,
 } from '../../../../core/logger/logger.js';
+import { setTokenCache } from '../../../../shared/utils/history/history.js';
 import { fixStuckTags } from '../../../../shared/utils/tagFixer.js';
-import { checkInputTokens } from '../../../../shared/utils/tokenCounter.js';
+import {
+  checkInputTokens,
+  extractTokenUsage,
+  logTokenUsage,
+} from '../../../../shared/utils/tokenCounter.js';
 import {
   buildMessageParts,
   deleteChatSession,
@@ -412,12 +420,18 @@ export async function generateContentStream(
 
       const response = await chat.sendMessageStream({ message: parts });
 
+      // Track usageMetadata từ chunks (Gemini SDK chỉ attach vào chunk cuối)
+      let latestUsage: GenerateContentResponseUsageMetadata | undefined = undefined;
+
       for await (const chunk of response) {
         if (callbacks.signal?.aborted) {
           debugLog('STREAM', 'Aborted');
           hasPartialResponse = state.buffer.length > 0;
           throw new Error('Aborted');
         }
+
+        // Capture usageMetadata ở chunk cuối (server-side chỉ emit 1 lần trên packet kết thúc)
+        if (chunk.usageMetadata) latestUsage = chunk.usageMetadata;
 
         if (chunk.text) {
           state.buffer += chunk.text;
@@ -430,6 +444,16 @@ export async function generateContentStream(
 
       if (overloadRetries > 0) {
         console.log(`[Gemini] ✅ Thành công sau ${overloadRetries} lần retry overload`);
+      }
+
+      // Log token usage từ response.usageMetadata (chính xác — không cần gọi countTokens API)
+      const usage = extractTokenUsage(latestUsage);
+      if (usage) {
+        const logThreadId = threadId || sessionId;
+        logTokenUsage(logThreadId, usage, keyManager.getCurrentModelName());
+        if (threadId && usage.total != null) {
+          setTokenCache(threadId, usage.total);
+        }
       }
 
       logAIResponse(`[STREAM] ${prompt.substring(0, 50)}`, state.buffer);

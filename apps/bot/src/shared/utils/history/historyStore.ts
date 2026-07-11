@@ -2,7 +2,10 @@
  * History Store - Lưu trữ và quản lý history
  * Hybrid: In-memory cache + SQLite persistence
  */
-import type { Content } from '@google/genai';
+import type {
+  Content,
+  GenerateContentResponseUsageMetadata,
+} from '@google/genai';
 import { CONFIG } from '../../../core/config/config.js';
 import { debugLog } from '../../../core/logger/logger.js';
 import { deleteChatSession } from '../../../infrastructure/ai/providers/gemini/geminiChat.js';
@@ -15,9 +18,32 @@ import { fetchFullHistory, getPaginationConfig, loadOldMessages } from './histor
 const messageHistory = new Map<string, Content[]>();
 const rawMessageHistory = new Map<string, any[]>();
 const tokenCache = new Map<string, number>();
+/** Timestamp (ms) của lần cuối setTokenCache → trimHistoryByTokens chỉ dùng cache khi còn fresh (<10s) */
+const cacheTimestamp = new Map<string, number>();
 const initializedThreads = new Set<string>();
 const preloadedMessages = new Map<string, any[]>();
 let isPreloaded = false;
+
+/** Coi cache là fresh nếu được set trong vòng 10s — tránh stale sau nhiều turn */
+const CACHE_FRESH_MS = 10_000;
+
+/** Update cache từ response.usageMetadata.totalTokenCount — chính xác hơn countTokens API */
+export function setTokenCache(threadId: string, totalTokens: number): void {
+  if (totalTokens <= 0) return;
+  tokenCache.set(threadId, totalTokens);
+  cacheTimestamp.set(threadId, Date.now());
+  // Opportunistic cleanup: evict timestamps cũ (>1h) của threads khác → tránh leak
+  const cutoff = Date.now() - 3_600_000;
+  for (const [id, ts] of cacheTimestamp) {
+    if (id !== threadId && ts < cutoff) cacheTimestamp.delete(id);
+  }
+  debugLog('HISTORY', `setTokenCache: thread=${threadId}, total=${totalTokens}`);
+}
+
+/** Đánh dấu cache stale — gọi sau khi save (history đã thay đổi, cache không còn đúng) */
+function invalidateTokenCache(threadId: string): void {
+  cacheTimestamp.set(threadId, 0);
+}
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const randomDelay = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1) + min);
@@ -57,20 +83,43 @@ async function persistToDb(
 }
 
 /**
- * Xóa lịch sử cũ từ từ cho đến khi dưới ngưỡng token
+ * Xóa lịch sử cũ từ từ cho đến khi dưới ngưỡng token.
+ * Tận dụng tokenCache khi cache còn fresh (được set từ response.usageMetadata gần đây)
+ * → giảm ~50% countTokens API calls, tránh 429 rate-limit khi history dài.
  */
 async function trimHistoryByTokens(threadId: string): Promise<void> {
   const history = messageHistory.get(threadId) || [];
   if (history.length === 0) return;
 
   const maxTokens = CONFIG.maxTokenHistory;
-  let currentTokens = await countTokens(history);
+  const cachedTotal = tokenCache.get(threadId);
+  const cacheTs = cacheTimestamp.get(threadId) ?? 0;
+  const cacheFresh = cachedTotal != null && Date.now() - cacheTs < CACHE_FRESH_MS;
+
+  // Optimization: dùng cache nếu còn fresh + dưới maxTokens (skip countTokens API call)
+  let currentTokens: number;
+  if (cacheFresh && cachedTotal! <= maxTokens) {
+    currentTokens = cachedTotal!;
+    debugLog(
+      'HISTORY',
+      `trimHistoryByTokens: using fresh cache=${currentTokens} (≤max=${maxTokens}, age=${Date.now() - cacheTs}ms) — skip countTokens API`,
+    );
+  } else {
+    currentTokens = await countTokens(history);
+  }
 
   console.log(`[History] Thread ${threadId}: ${currentTokens} tokens (max: ${maxTokens})`);
   debugLog(
     'HISTORY',
-    `trimHistoryByTokens: thread=${threadId}, tokens=${currentTokens}, max=${maxTokens}`,
+    `trimHistoryByTokens: thread=${threadId}, tokens=${currentTokens}, max=${maxTokens}, cacheFresh=${cacheFresh}`,
   );
+
+  // Fast path: nếu đã dưới max thì không cần trim
+  if (currentTokens <= maxTokens) {
+    tokenCache.set(threadId, currentTokens);
+    cacheTimestamp.set(threadId, Date.now());
+    return;
+  }
 
   const rawHistory = rawMessageHistory.get(threadId) || [];
   let trimCount = 0;
@@ -90,6 +139,7 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
   tokenCache.set(threadId, currentTokens);
+  cacheTimestamp.set(threadId, Date.now());
 }
 
 /**
@@ -212,6 +262,9 @@ export async function saveToHistory(threadId: string, message: any): Promise<voi
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
 
+  // Cache sẽ stale do vừa save — invalidate để trim lần sau KHÔNG dùng cache cũ
+  invalidateTokenCache(threadId);
+
   // Persist to DB
   persistToDb(threadId, 'user', content);
 
@@ -235,6 +288,9 @@ export async function saveResponseToHistory(threadId: string, responseText: stri
 
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
+
+  // Cache sẽ stale do vừa save — invalidate để trim lần sau KHÔNG dùng cache cũ
+  invalidateTokenCache(threadId);
 
   // Persist to DB
   persistToDb(threadId, 'model', content);
@@ -267,6 +323,9 @@ export async function saveToolResultToHistory(
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
 
+  // Cache sẽ stale do vừa save — invalidate để trim lần sau KHÔNG dùng cache cũ
+  invalidateTokenCache(threadId);
+
   // Persist to DB
   persistToDb(threadId, 'user', content);
 
@@ -292,6 +351,7 @@ export function clearHistory(threadId: string): void {
   messageHistory.delete(threadId);
   rawMessageHistory.delete(threadId);
   tokenCache.delete(threadId);
+  cacheTimestamp.delete(threadId);
   initializedThreads.delete(threadId);
 
   // Xóa Gemini chat session (quan trọng! để AI quên context cũ)

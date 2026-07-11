@@ -117,6 +117,13 @@ export const YouTubeChannelSchema = z.object({
   channelId: z.string().min(1, 'Thiếu ID channel YouTube'),
 });
 
+// ============ DIFFBOT URL EXTRACTION (thay Gemini URL Context) ============
+
+// ReadUrl params - dùng Diffbot Article API (free tier 10k/tháng)
+export const ReadUrlSchema = z.object({
+  url: z.string().url('URL không hợp lệ'),
+});
+
 // ============ YOU.COM SEARCH API ============
 
 // You.com Search params (chấp nhận cả q và query)
@@ -371,6 +378,7 @@ export const SendFriendRequestSchema = z.object({
 export const TOOL_EXAMPLES: Record<string, string> = {
   // System
   youSearch: `[tool:youSearch]{"q":"từ khóa tìm kiếm","count":10}[/tool]`,
+  readUrl: `[tool:readUrl]{"url":"https://example.com/article"}[/tool]`,
   youtubeSearch: `[tool:youtubeSearch]{"q":"music video","maxResults":5}[/tool]`,
   youtubeVideo: `[tool:youtubeVideo]{"videoId":"dQw4w9WgXcQ"}[/tool]`,
   youtubeChannel: `[tool:youtubeChannel]{"channelId":"UC..."}[/tool]`,
@@ -503,6 +511,7 @@ export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;
 export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
 export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
 export type YouSearchParams = z.infer<typeof YouSearchSchema>;
+export type ReadUrlParams = z.infer<typeof ReadUrlSchema>;
 
 // Poll types
 export type CreatePollParams = z.infer<typeof CreatePollSchema>;

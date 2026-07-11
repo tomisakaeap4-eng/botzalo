@@ -1,9 +1,10 @@
 /**
- * Search Module - Web search (You.com) and YouTube tools
+ * Search Module - Web search (You.com), Diffbot URL extract, YouTube
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
 import {
   youSearchTool,
+  readUrlTool,
   youtubeChannelTool,
   youtubeSearchTool,
   youtubeVideoTool,
@@ -12,12 +13,13 @@ import {
 export class SearchModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'search',
-    description: 'Web search (You.com) and YouTube tools',
+    description: 'Web search (You.com), Diffbot URL extraction, YouTube tools',
     version: '1.0.0',
   };
 
   private _tools: ITool[] = [
     youSearchTool,
+    readUrlTool,
     youtubeSearchTool,
     youtubeVideoTool,
     youtubeChannelTool,

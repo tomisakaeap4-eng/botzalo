@@ -32,7 +32,7 @@ TEST_VERBOSE=true bun test tests/e2e --timeout 120000
 |------|-------|
 | Basic Chat | Gửi tin nhắn đơn giản, bot phản hồi |
 | Multi-message Buffer | Gửi nhiều tin liên tiếp, bot gom nhóm xử lý |
-| Tool Calling | Test solveMath, youSearch |
+| Tool Calling | Test solveMath, youSearch, readUrl |
 | Media Handling | Test GIF (Giphy), ảnh anime (Nekos) |
 | File Creation | Test tạo DOCX, Chart |
 | Conversation Context | Test bot nhớ context |

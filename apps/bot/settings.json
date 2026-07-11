@@ -168,5 +168,8 @@
   "sandbox": {
     "installTimeoutMs": 60000,
     "executeTimeoutMs": 30000
+  },
+  "readUrl": {
+    "maxTextChars": 8000
   }
 }

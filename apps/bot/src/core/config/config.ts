@@ -119,6 +119,7 @@ function buildConfig(settings: Settings) {
     groupMembersFetch: settings.groupMembersFetch,
     gemini: settings.gemini,
     sandbox: settings.sandbox,
+    readUrl: settings.readUrl,
   };
 }
 
@@ -153,6 +154,7 @@ export type {
   MessageStoreConfig,
   ModulesConfig,
   ReactionConfig,
+  ReadUrlConfig,
   ResponseHandlerConfig,
   RetryConfig,
   SandboxConfig,

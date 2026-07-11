@@ -206,6 +206,7 @@ Bot xử lý: [3 tin nhắn cùng lúc]
 | Tool | Mô tả | API cần thiết |
 |------|-------|---------------|
 | `youSearch` | Tìm kiếm web | You.com Search |
+| `readUrl` | Đọc nội dung từ URL bất kỳ | Diffbot (10k credits/mo free) |
 | `youtube` | Tìm kiếm/lấy thông tin YouTube | YouTube API |
 | `weather` | Thời tiết | - |
 | `currency` | Tỷ giá tiền tệ | - |

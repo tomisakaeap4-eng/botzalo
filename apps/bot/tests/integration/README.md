@@ -104,6 +104,7 @@ tests/integration/
 │   ├── executeCode.test.ts    # E2B code execution
 │   ├── imagen.test.ts         # Google Imagen AI (native @google/genai)
 │   ├── youSearch.test.ts      # You.com web search
+│   ├── readUrl.test.ts        # Diffbot URL extraction (thay Gemini urlContext)
 │   ├── memory.test.ts         # Long-term memory
 │   ├── solveMath.test.ts      # Math solver
 │   └── youtube.test.ts        # YouTube Data API
@@ -132,6 +133,7 @@ Tests sẽ tự động skip nếu key không có.
 | Giphy | `GIPHY_API_KEY` | https://developers.giphy.com |
 | YouTube | `YOUTUBE_API_KEY` | https://console.cloud.google.com |
 | You.com Search | `YOU_API_KEY` | https://api.you.com |
+| Diffbot Read URL | `DIFFBOT_TOKEN` | https://www.diffbot.com |
 | Imagen | _(shared `GEMINI_API_KEY` pool)_ | https://aistudio.google.com |
 | E2B | `E2B_API_KEY` | https://e2b.dev |
 | ElevenLabs | `ELEVENLABS_API_KEY` | https://elevenlabs.io (legacy)

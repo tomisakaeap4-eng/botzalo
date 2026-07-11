@@ -35,6 +35,7 @@ export const API_KEYS = {
   giphy: process.env.GIPHY_API_KEY,
   youtube: process.env.YOUTUBE_API_KEY,
   youSearch: process.env.YOU_API_KEY,
+  diffbot: process.env.DIFFBOT_TOKEN,
   // Imagen dùng chung GEMINI_API_KEY pool (không cần key riêng)
   e2b: process.env.E2B_API_KEY,
   edgeTts: true, // Không cần API key, dùng Microsoft Edge TTS service

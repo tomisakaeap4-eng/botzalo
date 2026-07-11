@@ -12,13 +12,13 @@ import {
   validateParamsWithExample,
 } from '../../../shared/schemas/tools.schema.js';
 import type { ToolDefinition, ToolResult } from '../../../shared/types/tools.types.js';
-import { youSearch } from '../services/youClient.js';
+import { youSearch, type YouSearchHit } from '../services/youClient.js';
 
 export const youSearchTool: ToolDefinition = {
   name: 'youSearch',
   description:
     'Tìm kiếm thông tin trên web bằng You.com ($100 free credits, không cần thẻ tín dụng). ' +
-    'Trả về danh sách kết quả (title, url, snippet) cùng AI answer (nếu có). ' +
+    'Trả về danh sách kết quả web (`items`) + news (`news`) gồm title, link, snippet, pageAge. ' +
     'Lưu ý: KHÔNG hỗ trợ tìm kiếm hình ảnh — dùng tool `imagen` để tạo ảnh AI. ' +
     'Ưu tiên dùng khi user hỏi tin tức, sự kiện, thông tin mới, kiến thức chung.',
   parameters: [
@@ -55,7 +55,7 @@ export const youSearchTool: ToolDefinition = {
     {
       name: 'includeAnswer',
       type: 'boolean',
-      description: 'Yêu cầu AI answer tổng hợp (tốn thêm credits)',
+      description: 'Bật `include_answer=true` (chỉ áp dụng nếu plan hỗ trợ)',
       required: false,
     },
   ],
@@ -74,23 +74,30 @@ export const youSearchTool: ToolDefinition = {
         includeAnswer: data.includeAnswer,
       });
 
-      const items = (result.hits ?? []).map((h) => ({
-        title: h.name,
+      // You.com v1: results.web[]. Gộp snippets[] thành 1 chuỗi để LLM dễ đọc.
+      const mapHit = (h: YouSearchHit) => ({
+        title: h.title,
         link: h.url,
-        snippet: h.snippet,
+        snippet: (h.snippets ?? []).join('\n\n…\n\n'),
         description: h.description ?? null,
-        age: h.age ?? null,
-      }));
+        pageAge: h.page_age ?? null,
+      });
 
-      debugLog('YOU', `Found ${items.length} results for "${data.q}"`);
+      const items = (result.results?.web ?? []).map(mapHit);
+      // News (optional) — tách riêng để caller biết tổng số web / news
+      const news = (result.results?.news ?? []).map(mapHit);
+
+      debugLog('YOU', `Found ${items.length} web + ${news.length} news for "${data.q}"`);
 
       return {
         success: true,
         data: {
           query: data.q,
-          answer: result.answer || null,
           items,
-          itemCount: items.length,
+          news,
+          webCount: items.length,
+          newsCount: news.length,
+          itemCount: items.length + news.length,
         },
       };
     } catch (error: any) {

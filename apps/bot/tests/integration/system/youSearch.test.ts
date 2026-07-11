@@ -22,14 +22,15 @@ describe.skipIf(SKIP)('You.com Search API Integration', () => {
     });
 
     expect(result).toBeDefined();
-    expect(result.hits).toBeArray();
-    expect(result.hits.length).toBeGreaterThan(0);
-    expect(result.hits.length).toBeLessThanOrEqual(5);
+    expect(result.results).toBeDefined();
+    expect(result.results.web).toBeArray();
+    expect(result.results.web.length).toBeGreaterThan(0);
+    expect(result.results.web.length).toBeLessThanOrEqual(5);
 
-    const hit = result.hits[0];
+    const hit = result.results.web[0];
     expect(hit.url).toContain('http');
-    expect(hit.name).toBeDefined();
-    expect(hit.snippet).toBeDefined();
+    expect(hit.title).toBeDefined();
+    expect(hit.title.length).toBeGreaterThan(0);
   }, TEST_CONFIG.timeout);
 
   test('youSearch - country filter VN', async () => {
@@ -39,8 +40,8 @@ describe.skipIf(SKIP)('You.com Search API Integration', () => {
       country: 'VN',
     });
 
-    expect(result.hits).toBeArray();
-    expect(result.hits.length).toBeGreaterThan(0);
+    expect(result.results.web).toBeArray();
+    expect(result.results.web.length).toBeGreaterThan(0);
   }, TEST_CONFIG.timeout);
 
   test('youSearch - language filter en', async () => {
@@ -50,8 +51,8 @@ describe.skipIf(SKIP)('You.com Search API Integration', () => {
       language: 'en',
     });
 
-    expect(result.hits).toBeArray();
-    expect(result.hits.length).toBeGreaterThan(0);
+    expect(result.results.web).toBeArray();
+    expect(result.results.web.length).toBeGreaterThan(0);
   }, TEST_CONFIG.timeout);
 
   test('youSearch - safeSearch on', async () => {
@@ -61,8 +62,8 @@ describe.skipIf(SKIP)('You.com Search API Integration', () => {
       safeSearch: 'on',
     });
 
-    expect(result.hits).toBeArray();
-    expect(result.hits.length).toBeGreaterThan(0);
+    expect(result.results.web).toBeArray();
+    expect(result.results.web.length).toBeGreaterThan(0);
   }, TEST_CONFIG.timeout);
 
   test('youSearch - max count 20', async () => {
@@ -71,6 +72,6 @@ describe.skipIf(SKIP)('You.com Search API Integration', () => {
       count: 20,
     });
 
-    expect(result.hits.length).toBeLessThanOrEqual(20);
+    expect(result.results.web.length).toBeLessThanOrEqual(20);
   }, TEST_CONFIG.timeout);
 });

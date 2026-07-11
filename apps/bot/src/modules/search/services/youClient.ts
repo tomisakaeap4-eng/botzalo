@@ -10,6 +10,9 @@
  *
  * Endpoint cũ `https://api.you.com/search` đã deprecated — chuyển sang
  * `https://ydc-index.io/v1/search` (auth: `X-API-Key` header).
+ *
+ * Response shape (v1): { results: { web: [...], news?: [...] }, metadata }
+ * — chú ý khác hoàn toàn so với API cũ (`hits[]`).
  */
 
 import { debugLog } from '../../../core/logger/logger.js';
@@ -28,28 +31,36 @@ export interface YouSearchParams {
   country?: string; // ISO 3166-1 alpha-2, vd "VN"
   language?: string; // ISO 639-1, vd "vi"
   safeSearch?: 'on' | 'off';
-  // AI answer tổng hợp (chỉ có ở một số plan)
+  // Một số plan hỗ trợ AI summary — disable mặc định để tiết kiệm credits
   includeAnswer?: boolean;
 }
 
 // ═══════════════════════════════════════════════════
-// RESPONSE SHAPE
+// RESPONSE SHAPE (v1 API)
 // ═══════════════════════════════════════════════════
 
 export interface YouSearchHit {
   url: string;
-  name: string; // title
-  snippet: string;
+  title: string;
   description?: string;
-  age?: string; // tuổi của kết quả, vd: "2 hours ago"
+  // ISO 8601 timestamp, vd: "2024-08-24T08:08:38"
+  page_age?: string;
+  // Nhiều snippet trích từ page (có thể rỗng)
+  snippets?: string[];
 }
 
 export interface YouSearchResponse {
-  hits: YouSearchHit[];
-  // Một số endpoint You.com còn thêm:
-  answer?: string | null; // LLM answer nếu có
+  results: {
+    web: YouSearchHit[];
+    news?: YouSearchHit[];
+  };
   // eslint-disable-next-line @typescript-eslint/naming-convention
-  $meta?: Record<string, unknown>;
+  metadata?: {
+    query?: string;
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    search_uuid?: string;
+    latency?: number;
+  };
 }
 
 // ═══════════════════════════════════════════════════
@@ -57,7 +68,7 @@ export interface YouSearchResponse {
 // ═══════════════════════════════════════════════════
 
 /**
- * Gọi You.com /search.
+ * Gọi You.com v1 search.
  * @throws nếu YOU_API_KEY chưa cấu hình
  * @throws với message gốc nếu API trả lỗi (401/429/...).
  */
@@ -92,11 +103,9 @@ export async function youSearch(
     })
     .json<YouSearchResponse>();
 
-  debugLog(
-    'YOU',
-    `✓ Got ${response.hits?.length ?? 0} hits` +
-      (response.answer ? ' (with AI answer)' : ''),
-  );
+  const webCount = response.results?.web?.length ?? 0;
+  const newsCount = response.results?.news?.length ?? 0;
+  debugLog('YOU', `✓ Got ${webCount} web hits, ${newsCount} news hits`);
 
   return response;
 }

@@ -119,47 +119,6 @@ describe.skipIf(SKIP)('E2E: Full Bot Flow', () => {
       e2eLog('DONE', 'Math tool test complete');
       expect(true).toBe(true);
     }, E2E_CONFIG.timeout);
-
-    test('Yêu cầu tìm kiếm - Bot dùng tool youSearch', async () => {
-      if (!api) return;
-
-      const testMessage = 'Tìm kiếm: thời tiết Hà Nội hôm nay';
-      e2eLog('SEND', `Sending search request: "${testMessage}"`);
-
-      await api.sendMessage(testMessage, TEST_THREAD_ID, THREAD_TYPE);
-      await waitForResponse(E2E_CONFIG.messageWaitMs + 10000); // Search cần thêm thời gian
-
-      e2eLog('DONE', 'Search tool test complete');
-      expect(true).toBe(true);
-    }, E2E_CONFIG.timeout);
-  });
-
-  describe('Media Handling', () => {
-    test('Yêu cầu GIF - Bot gửi GIF từ Giphy', async () => {
-      if (!api) return;
-
-      const testMessage = 'Gửi cho tôi 1 gif mèo cute';
-      e2eLog('SEND', `Sending GIF request: "${testMessage}"`);
-
-      await api.sendMessage(testMessage, TEST_THREAD_ID, THREAD_TYPE);
-      await waitForResponse(E2E_CONFIG.messageWaitMs + 5000);
-
-      e2eLog('DONE', 'GIF request test complete');
-      expect(true).toBe(true);
-    }, E2E_CONFIG.timeout);
-
-    test('Yêu cầu ảnh anime - Bot gửi ảnh từ Nekos', async () => {
-      if (!api) return;
-
-      const testMessage = 'Gửi cho tôi 1 ảnh anime neko';
-      e2eLog('SEND', `Sending anime image request: "${testMessage}"`);
-
-      await api.sendMessage(testMessage, TEST_THREAD_ID, THREAD_TYPE);
-      await waitForResponse(E2E_CONFIG.messageWaitMs + 5000);
-
-      e2eLog('DONE', 'Anime image test complete');
-      expect(true).toBe(true);
-    }, E2E_CONFIG.timeout);
   });
 
   describe('File Creation', () => {
@@ -235,8 +194,7 @@ describe.skipIf(SKIP)('E2E: Full Bot Flow', () => {
 📊 Tests Executed:
 • Basic Chat Flow
 • Multi-message Buffer
-• Tool Calling (Math, Search)
-• Media Handling (GIF, Anime)
+• Tool Calling (Math)
 • File Creation (DOCX, Chart)
 • Conversation Context
 • Error Handling

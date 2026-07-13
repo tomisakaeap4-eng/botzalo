@@ -155,11 +155,4 @@
     "rateLimitMinuteMs": 120000,
     "rateLimitDayMs": 86400000
   },
-  "sandbox": {
-    "installTimeoutMs": 60000,
-    "executeTimeoutMs": 30000
-  },
-  "readUrl": {
-    "maxTextChars": 8000
-  }
 }

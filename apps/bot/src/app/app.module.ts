@@ -8,7 +8,6 @@ import { databaseService } from '../infrastructure/database/index.js';
 import { chatModule } from '../modules/chat/chat.module.js';
 import { gatewayModule } from '../modules/gateway/gateway.module.js';
 import { mediaModule } from '../modules/media/media.module.js';
-import { searchModule } from '../modules/search/search.module.js';
 import { socialModule } from '../modules/social/social.module.js';
 import { systemModule } from '../modules/system/system.module.js';
 import { taskModule } from '../modules/task/task.module.js';
@@ -30,7 +29,6 @@ export async function registerModules(): Promise<void> {
   await moduleManager.register(systemModule);
   await moduleManager.register(chatModule);
   await moduleManager.register(mediaModule);
-  await moduleManager.register(searchModule);
   await moduleManager.register(socialModule);
   await moduleManager.register(taskModule);
 }
@@ -57,7 +55,6 @@ export {
   gatewayModule,
   mediaModule,
   moduleManager,
-  searchModule,
   socialModule,
   systemModule,
   taskModule,

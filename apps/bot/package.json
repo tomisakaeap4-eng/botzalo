@@ -29,7 +29,6 @@
   "keywords": ["zalo", "bot", "gemini", "ai"],
   "license": "MIT",
   "dependencies": {
-    "@e2b/code-interpreter": "^2.6.1",
     "@google/genai": "^2.11.0",
     "cfb": "^1.2.2",
     "chart.js": "^4.5.1",

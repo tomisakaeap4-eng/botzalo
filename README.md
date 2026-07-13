@@ -32,7 +32,7 @@
 - 🧠 **AI Thông minh** - Google Gemini 2.5 Flash với 8192 thinking token budget
 - ⚡ **Streaming Real-time** - Gửi phản hồi ngay khi AI bắt đầu generate
 - 🖼️ **Đa phương tiện** - Xử lý text, ảnh, video, audio, file và sticker
-- 🔌 **Plugin System** - Kiến trúc modular với 8 modules và 50+ tools
+- 🔌 **Plugin System** - Kiến trúc modular với 6 modules và 50+ tools
 - 📊 **Web Dashboard** - Quản lý settings, logs, memories, tasks, backup
 - 🐳 **Cloud-Ready** - Docker support với health checks
 
@@ -114,10 +114,8 @@ GEMINI_API_KEY=your_gemini_api_key
 
 # Dịch vụ tùy chọn
 GROQ_API_KEY=your_groq_key              # Background agent
-E2B_API_KEY=your_e2b_key                # Chạy code sandbox
 # Imagen uses shared GEMINI_API_KEY (native @google/genai)
 ELEVENLABS_API_KEY=your_elevenlabs_key  # Text-to-speech (legacy, không dùng)
-YOUTUBE_API_KEY=your_youtube_key        # Tìm kiếm YouTube
 GOOGLE_SEARCH_API_KEY=your_search_key   # Tìm kiếm web
 GOOGLE_SEARCH_CX=your_search_engine_cx
 GIPHY_API_KEY=your_giphy_key            # Tìm kiếm GIF
@@ -202,16 +200,6 @@ Bot xử lý: [3 tin nhắn cùng lúc]
 | `imagen` | Tạo ảnh AI | Google Imagen |
 | `textToSpeech` | Chuyển text thành giọng nói | Microsoft Edge TTS (miễn phí) |
 
-### Search Module
-| Tool | Mô tả | API cần thiết |
-|------|-------|---------------|
-| `youSearch` | Tìm kiếm web | You.com Search |
-| `readUrl` | Đọc nội dung từ URL bất kỳ | Diffbot (10k credits/mo free) |
-| `youtube` | Tìm kiếm/lấy thông tin YouTube | YouTube API |
-| `weather` | Thời tiết | - |
-| `currency` | Tỷ giá tiền tệ | - |
-| `steam` | Thông tin game Steam | - |
-
 ### Social Module
 | Tool | Mô tả |
 |------|-------|
@@ -229,7 +217,6 @@ Bot xử lý: [3 tin nhắn cùng lúc]
 ### Task Module
 | Tool | Mô tả | API cần thiết |
 |------|-------|---------------|
-| `executeCode` | Chạy code trong sandbox | E2B |
 | `solveMath` | Giải toán với LaTeX | - |
 | `createApp` | Tạo code ứng dụng | - |
 | `scheduleTask` | Lên lịch task tương lai | Groq |
@@ -305,7 +292,7 @@ zia/
 │   │   │   │   ├── gateway/     # Message pipeline
 │   │   │   │   ├── chat/        # Chat tools
 │   │   │   │   ├── media/       # Media tools
-│   │   │   │   ├── search/      # Search tools
+
 │   │   │   │   ├── social/      # Social tools
 │   │   │   │   ├── task/        # Task tools
 │   │   │   │   ├── entertainment/  # Anime/Media

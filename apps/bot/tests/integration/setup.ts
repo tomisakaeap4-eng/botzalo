@@ -33,10 +33,6 @@ export const TEST_CONFIG = {
 export const API_KEYS = {
   gemini: process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_1,
   giphy: process.env.GIPHY_API_KEY,
-  youtube: process.env.YOUTUBE_API_KEY,
-  youSearch: process.env.YOU_API_KEY,
-  diffbot: process.env.DIFFBOT_TOKEN,
-  e2b: process.env.E2B_API_KEY,
   edgeTts: true, // Không cần API key, dùng Microsoft Edge TTS service
   zaloCredentials: process.env.ZALO_CREDENTIALS_BASE64,
 };

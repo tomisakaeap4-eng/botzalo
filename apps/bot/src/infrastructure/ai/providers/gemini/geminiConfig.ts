@@ -90,8 +90,6 @@ export const GEMINI_CONFIG = {
   get thinkingConfig(): ThinkingConfig {
     return buildThinkingConfig();
   },
-  // ❌ Built-in urlContext đã bỏ — thay bằng tool `readUrl` (Diffbot) trong search module
-  // để kiểm soát credit/quota và giới hạn độ dài text trả về.
   safetySettings: SAFETY_SETTINGS,
 };
 

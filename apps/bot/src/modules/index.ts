@@ -9,11 +9,9 @@ export * from './gateway/gateway.module.js';
 export { gatewayModule } from './gateway/gateway.module.js';
 // Media - Charts, files, images, TTS
 export { mediaModule } from './media/media.module.js';
-// Search - Web search, YouTube, weather
-export { searchModule } from './search/search.module.js';
 // Social - User info, friends, groups
 export { socialModule } from './social/social.module.js';
 // System - Utility tools
 export { systemModule } from './system/system.module.js';
-// Task - Code execution, math, scheduling
+// Task - Math, scheduling
 export { taskModule } from './task/task.module.js';

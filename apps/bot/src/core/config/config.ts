@@ -117,8 +117,6 @@ function buildConfig(settings: Settings) {
     websocketConnectTimeoutMs: settings.websocketConnectTimeoutMs,
     groupMembersFetch: settings.groupMembersFetch,
     gemini: settings.gemini,
-    sandbox: settings.sandbox,
-    readUrl: settings.readUrl,
   };
 }
 
@@ -152,10 +150,8 @@ export type {
   MessageStoreConfig,
   ModulesConfig,
   ReactionConfig,
-  ReadUrlConfig,
   ResponseHandlerConfig,
   RetryConfig,
-  SandboxConfig,
   Settings,
 } from './config.schema.js';
 

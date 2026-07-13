@@ -93,7 +93,6 @@ export const ModulesConfigSchema = z.object({
   system: z.boolean().default(true),
   chat: z.boolean().default(true),
   media: z.boolean().default(true),
-  search: z.boolean().default(true),
   social: z.boolean().default(true),
   task: z.boolean().default(true),
 });
@@ -201,19 +200,6 @@ export const GeminiConfigSchema = z.object({
   rateLimitDayMs: z.coerce.number().min(3600000).default(86400000),
 });
 
-// Sandbox config schema
-export const SandboxConfigSchema = z.object({
-  installTimeoutMs: z.coerce.number().min(10000).default(60000),
-  executeTimeoutMs: z.coerce.number().min(5000).default(30000),
-});
-
-// ReadUrl config schema (Diffbot URL extraction tool)
-export const ReadUrlConfigSchema = z.object({
-  // Max character của text trả về — tránh Gemini context overflow
-  // với Wikipedia/StackOverflow (~50k+ chars). ~8k chars ≈ 2k tokens.
-  maxTextChars: z.coerce.number().min(1000).default(8000),
-});
-
 // Full settings schema
 export const SettingsSchema = z.object({
   adminUserId: z.string().default(''),
@@ -268,7 +254,6 @@ export const SettingsSchema = z.object({
     system: true,
     chat: true,
     media: true,
-    search: true,
     social: true,
     task: true,
   }),
@@ -346,13 +331,6 @@ export const SettingsSchema = z.object({
     rateLimitMinuteMs: 120000,
     rateLimitDayMs: 86400000,
   }),
-  sandbox: SandboxConfigSchema.optional().default({
-    installTimeoutMs: 60000,
-    executeTimeoutMs: 30000,
-  }),
-  readUrl: ReadUrlConfigSchema.optional().default({
-    maxTextChars: 8000,
-  }),
 });
 
 // Type inference từ schema
@@ -377,8 +355,7 @@ export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
 export type ResponseHandlerConfig = z.infer<typeof ResponseHandlerConfigSchema>;
 export type GroupMembersFetchConfig = z.infer<typeof GroupMembersFetchConfigSchema>;
 export type GeminiConfig = z.infer<typeof GeminiConfigSchema>;
-export type SandboxConfig = z.infer<typeof SandboxConfigSchema>;
-export type ReadUrlConfig = z.infer<typeof ReadUrlConfigSchema>;
+
 export type Settings = z.infer<typeof SettingsSchema>;
 
 // MIME types (static, không cần validate)

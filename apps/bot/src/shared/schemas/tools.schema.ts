@@ -72,60 +72,6 @@ export const CreateChartSchema = z.object({
   height: z.coerce.number().min(200).max(2000).optional(),
 });
 
-// ============ YOUTUBE API TOOLS ============
-
-// YouTube Search params
-export const YouTubeSearchSchema = z.object({
-  q: z.string().min(1, 'Thiếu từ khóa tìm kiếm'),
-  type: z.enum(['video', 'channel', 'playlist']).default('video'),
-  maxResults: z.coerce.number().min(1).max(50).default(5),
-  order: z.enum(['relevance', 'date', 'rating', 'viewCount', 'title']).optional(),
-  videoDuration: z.enum(['any', 'short', 'medium', 'long']).optional(),
-  pageToken: z.string().optional(),
-});
-
-// YouTube Video Details params
-export const YouTubeVideoSchema = z.object({
-  videoId: z.string().min(1, 'Thiếu ID video YouTube'),
-});
-
-// YouTube Channel Details params
-export const YouTubeChannelSchema = z.object({
-  channelId: z.string().min(1, 'Thiếu ID channel YouTube'),
-});
-
-// ============ DIFFBOT URL EXTRACTION (thay Gemini URL Context) ============
-
-// ReadUrl params - dùng Diffbot Article API (free tier 10k/tháng)
-export const ReadUrlSchema = z.object({
-  url: z.string().url('URL không hợp lệ'),
-});
-
-// ============ YOU.COM SEARCH API ============
-
-// You.com Search params (chấp nhận cả q và query)
-// Migration từ Tavily (do cùng lý do Google CSE đóng cửa).
-// Free $100 credits ban đầu, không cần thẻ tín dụng.
-export const YouSearchSchema = z
-  .object({
-    q: z.string().optional(),
-    query: z.string().optional(),
-    count: z.coerce.number().min(1).max(20).default(10),
-    country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2, vd "VN"'),
-    language: z.string().length(2).optional().describe('ISO 639-1, vd "vi"'),
-    safeSearch: z.enum(['on', 'off']).optional(),
-    includeAnswer: z.boolean().optional().describe('Yêu cầu AI answer (tốn thêm credits)'),
-  })
-  .transform((data) => ({
-    q: data.q || data.query || '',
-    count: data.count,
-    country: data.country,
-    language: data.language,
-    safeSearch: data.safeSearch,
-    includeAnswer: data.includeAnswer,
-  }))
-  .refine((data) => data.q.length > 0, { message: 'Thiếu từ khóa tìm kiếm (q hoặc query)' });
-
 // ============ POLL TOOLS ============
 
 // Create Poll params
@@ -354,14 +300,8 @@ export const SendFriendRequestSchema = z.object({
  */
 export const TOOL_EXAMPLES: Record<string, string> = {
   // System
-  youSearch: `[tool:youSearch]{"q":"từ khóa tìm kiếm","count":10}[/tool]`,
-  readUrl: `[tool:readUrl]{"url":"https://example.com/article"}[/tool]`,
-  youtubeSearch: `[tool:youtubeSearch]{"q":"music video","maxResults":5}[/tool]`,
-  youtubeVideo: `[tool:youtubeVideo]{"videoId":"dQw4w9WgXcQ"}[/tool]`,
-  youtubeChannel: `[tool:youtubeChannel]{"channelId":"UC..."}[/tool]`,
   createChart: `[tool:createChart]{"type":"bar","title":"Biểu đồ","labels":["A","B","C"],"datasets":[{"label":"Data","data":[10,20,30]}]}[/tool]`,
   createFile: `[tool:createFile]{"filename":"report.docx","content":"# Tiêu đề\\n\\nNội dung..."}[/tool]`,
-  executeCode: `[tool:executeCode]{"code":"print('Hello')","language":"python"}[/tool]`,
   textToSpeech: `[tool:textToSpeech]{"text":"Xin chào"}[/tool]`,
   solveMath: `[tool:solveMath]{"problem":"Giải $x^2 = 4$","solution":"$x = \\pm 2$"}[/tool]`,
   clearHistory: `[tool:clearHistory]{}[/tool]`,
@@ -482,11 +422,6 @@ export type GetGroupMembersParams = z.infer<typeof GetGroupMembersSchema>;
 export type TextToSpeechParams = z.infer<typeof TextToSpeechSchema>;
 export type CreateFileParams = z.infer<typeof CreateFileSchema>;
 export type CreateChartParams = z.infer<typeof CreateChartSchema>;
-export type YouTubeSearchParams = z.infer<typeof YouTubeSearchSchema>;
-export type YouTubeVideoParams = z.infer<typeof YouTubeVideoSchema>;
-export type YouTubeChannelParams = z.infer<typeof YouTubeChannelSchema>;
-export type YouSearchParams = z.infer<typeof YouSearchSchema>;
-export type ReadUrlParams = z.infer<typeof ReadUrlSchema>;
 
 // Poll types
 export type CreatePollParams = z.infer<typeof CreatePollSchema>;

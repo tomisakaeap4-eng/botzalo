@@ -2,16 +2,10 @@
  * Modules - Feature modules
  */
 
-// Chat - History và memory
-export { chatModule } from './chat/chat.module.js';
-export * from './gateway/gateway.module.js';
 // Gateway - Message processing pipeline
 export { gatewayModule } from './gateway/gateway.module.js';
-// Media - Charts, files, images, TTS
+export * from './gateway/gateway.module.js';
+// Media - TTS
 export { mediaModule } from './media/media.module.js';
-// Social - User info, friends, groups
+// Social - Group mgmt + polls/notes/reminders
 export { socialModule } from './social/social.module.js';
-// System - Utility tools
-export { systemModule } from './system/system.module.js';
-// Task - Math, scheduling
-export { taskModule } from './task/task.module.js';

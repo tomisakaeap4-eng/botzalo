@@ -5,12 +5,9 @@ import { container, eventBus, moduleManager, Services } from '../core/index.js';
 import { databaseService } from '../infrastructure/database/index.js';
 
 // Import module instances
-import { chatModule } from '../modules/chat/chat.module.js';
 import { gatewayModule } from '../modules/gateway/gateway.module.js';
 import { mediaModule } from '../modules/media/media.module.js';
 import { socialModule } from '../modules/social/social.module.js';
-import { systemModule } from '../modules/system/system.module.js';
-import { taskModule } from '../modules/task/task.module.js';
 
 /**
  * Đăng ký tất cả modules vào ModuleManager
@@ -26,11 +23,8 @@ export async function registerModules(): Promise<void> {
 
   // Register modules (thứ tự quan trọng nếu có dependencies)
   await moduleManager.register(gatewayModule);
-  await moduleManager.register(systemModule);
-  await moduleManager.register(chatModule);
   await moduleManager.register(mediaModule);
   await moduleManager.register(socialModule);
-  await moduleManager.register(taskModule);
 }
 
 /**
@@ -50,12 +44,4 @@ export async function initializeApp(): Promise<void> {
 
 // Export module instances for direct access
 // Export module manager
-export {
-  chatModule,
-  gatewayModule,
-  mediaModule,
-  moduleManager,
-  socialModule,
-  systemModule,
-  taskModule,
-};
+export { gatewayModule, mediaModule, moduleManager, socialModule };

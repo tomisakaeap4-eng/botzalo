@@ -1,6 +1,8 @@
-# Zia — Zalo AI Chatbot
+# Zia — Zalo AI Chatbot (Phase 2)
 
-**Project overview nội bộ — Chatbot AI cho nền tảng Zalo, theo dõi dữ liệu qua Web Dashboard (Next.js 16).**
+**Product/promotion/marketing chatbot cho Zalo với basic group management — theo dõi dữ liệu qua Web Dashboard (Next.js 16).**
+
+> Phase 2 refactor (2026): tinh gọn từ 44 tools (6 modules — admin-heavy) → **18 tools (2 modules — marketing-aligned)** phù hợp bot cho sản phẩm, quảng bá, và quản lý nhóm cơ bản.
 
 Monorepo gồm 2 ứng dụng:
 
@@ -9,17 +11,22 @@ Monorepo gồm 2 ứng dụng:
 | `bot`    | AI chatbot Zalo chạy trên Bun            | Bun 1+, TypeScript 5+, zca-js, Google Gemini, SQLite (Drizzle ORM), Hono |
 | `web`    | Dashboard quản lý bot qua REST API        | Next.js 16, React 19, TailwindCSS 4, Hono proxy |
 
-Bot lắng nghe tin nhắn Zalo qua `zca-js`, chạy qua Google Gemini (mặc định `models/gemini-3.1-flash-lite`), có thể gọi **44 tools** trên 6 modules, lưu lịch sử hội thoại vào SQLite, xuất file qua Microsoft Edge TTS / Chart.js / docx-pptx builder, và expose REST API cho web dashboard xem logs/stats/backup/đổi settings runtime.
+Bot lắng nghe tin nhắn Zalo qua `zca-js`, chạy qua Google Gemini (mặc định `models/gemini-3.1-flash-lite`), gọi **18 tools trên 2 modules**, lưu lịch sử hội thoại vào SQLite, xuất voice qua Microsoft Edge TTS, và expose REST API cho web dashboard xem logs/stats/backup/đổi settings runtime.
 
 ---
 
 ## Tổng quan khả năng
 
 - 🧠 **AI streaming real-time** với Gemini (multi-key rotation, tự retry khi 429/503) — `bot.useStreaming`, `gemini.thinkingBudget=8192`, `thinkingLevel='HIGH'`
-- 🗂️ **6 modules — 44 tools** (đếm từ `apps/bot/src/modules/*/tools/index.ts`):
-  `chat` 1 · `media` 3 · `social` 37 · `system` 1 · `task` 2
+- 🗂️ **2 modules — 18 tools** (đếm từ `apps/bot/src/modules/*/tools/index.ts`):
+  `media` 1 (voice) · `social` 17 (group mgmt + polls/notes/reminders)
 - 🧾 **Message buffering 2.5s** gom nhiều tin liên tiếp (`buffer.delayMs`)
-- 📂 **Đa phương tiện**: text, ảnh, video, audio/voice, file PDF/TXT/code → phân tích bằng Gemini
+- 📂 **Đa phương tiện**: text, ảnh, video, audio/voice, file → phân tích bằng Gemini
+- 📢 **Marketing-friendly**:
+  - 🎤 `textToSpeech` — đọc quảng cáo SP bằng giọng Neural
+  - 📝 `createNote` — ghim thông báo KM/launch lên đầu nhóm
+  - 📊 `createPoll` — khảo sát nhu cầu khách hàng
+  - ⏰ `createReminder` — lên lịch flash-sale/webinar
 - 🌐 **Web Dashboard** Next.js 16 + Hono proxy truy cập bot REST API
 - 🐳 **Docker** + health check + base64 credentials cho Railway/Render
 - 💤 **Sleep mode** tự động offline theo giờ (`bot.sleepMode`)
@@ -76,13 +83,11 @@ bun run --cwd apps/bot lint                                # biome lint
 
 ### Biến môi trường (`apps/bot/.env`)
 
-Danh sách này lấy từ usage thực tế trong code (`grep process.env` toàn repo):
-
 | Biến                      | Bắt buộc | Mô tả                                                                                                |
 | ------------------------- | -------- | ---------------------------------------------------------------------------------------------------- |
 | `GEMINI_API_KEY`          | Bắt buộc | API key Gemini. Nhiều key: `key1,key2,key3` (một dòng) **HOẶC** `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, … (nhiều dòng, không giới hạn). Tự xoay khi 429. |
 | `API_KEY`                 | Khuyến nghị | Bearer token cho TẤT CẢ `/api/*` endpoints. Có → bật Bearer auth; không có → API public (chỉ dev).   |
-| `LOG_RECEIVER_ID`         | Tùy chọn | Zalo User ID nhận file log tự động (khi cache đủ 1000 dòng → flushLogs gửi qua Zalo).                |
+| `LOG_RECEIVER_ID`         | Tùy chọn | Zalo User ID nhận file log tự động (khi cache đủ 1000 dòng → flushLogs gửi qua Zalo). Note: `flush_logs` tool đã bị gỡ Phase 2, chỉ auto-flush còn lại. |
 | `ZALO_CREDENTIALS_BASE64` | Tùy chọn | Cloud deploy: base64 của `credentials.json`. Dùng cho Railway/Render khi không có file vật lý.       |
 | `PORT`                    | Tùy chọn | Port cho cả bot REST API + WebSocket. Mặc định `10000`.                                              |
 | `NODE_ENV`                | Tùy chọn | `production` → bật một số guard trong logger (`apps/bot/src/core/logger/logger.ts`).                |
@@ -93,17 +98,17 @@ Danh sách này lấy từ usage thực tế trong code (`grep process.env` toà
 | `SKIP_EDGE_TTS`           | Test only | Set `true` để skip test TTS trong CI.                                                                 |
 | `TEST_VERBOSE`            | Test only | Set `true` để in log chi tiết trong test setup.                                                      |
 
-> `bun.lock` không bao giờ push lên remote (luôn `git restore --staged bun.lock` trước commit).
+> `bun.lock` không bao gồm push lên remote (luôn `git restore --staged bun.lock` trước commit).
 
 ### Runtime settings (`apps/bot/settings.json`)
 
-Validate bằng `apps/bot/src/core/config/config.schema.ts` (Zod). Toàn bộ section đều có default — thiếu key auto-fill. Reload runtime qua REST API `PUT /api/settings` hoặc `PATCH /api/settings/:key` (xem phần "REST API").
+Validate bằng `apps/bot/src/core/config/config.schema.ts` (Zod). Thứ tự section `modules` đã được tinh gọn Phase 2:
 
 | Section                                                  | Mô tả                                                                        | Default chính                                         |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
 | `adminUserId`                                            | Hard-coded admin Zalo ID                                                      | `""`                                                  |
 | `bot.name`                                              | Tên hiển thị khi khởi động                                                    | `"Trợ lý AI Zalo"`                                   |
-| `bot.prefix` / `bot.requirePrefix`                       | Lệnh prefix (`#bot`) — bắt buộc hay tùy chọn                                  | `"#bot"`, `false`                                     |
+| `bot.prefix` / `bot.requirePrefix`                       | Lệnh prefix (`#bot`)                                                          | `"#bot"`, `false`                                     |
 | `bot.useStreaming`                                       | Trả lời từng phần real-time                                                  | `true`                                                |
 | `bot.maxToolDepth`                                       | Số lần tool call lồng nhau tối đa                                              | `10`                                                  |
 | `bot.maxInputTokens` / `bot.maxTokenHistory`             | Giới hạn token input / tổng context                                            | `200000` / `300000`                                   |
@@ -117,12 +122,12 @@ Validate bằng `apps/bot/src/core/config/config.schema.ts` (Zod). Toàn bộ se
 | `fetch.{timeoutMs,maxRetries,maxTextConvertSizeMB}`      | Tải URL/file                                                                  | `60000` / `3` / `20`                                 |
 | `retry.{maxRetries,baseDelayMs,retryableStatusCodes}`    | Retry Gemini khi fail                                                        | `3` / `2000` / `[503,429,500,502,504]`                |
 | `historyLoader.{enabled,loadFromDb,defaultLimit}`        | Preload lịch sử khi start                                                     | `true`, `true`, `100`                                 |
-| `modules.{system,chat,media,social,task}`               | Bật/tắt từng module                                                         | tất cả `true`                                        |
-| `stickers.keywords`                                      | Từ khóa auto-suggest sticker                                                  | `[]`                                                  |
+| **`modules.{media,social}`**                            | **Phase 2: chỉ 2 modules. Đã bỏ `chat`, `system`, `task`.**                  | `media: true, social: true`                            |
+| `stickers.keywords`                                      | Từ khoá auto-suggest sticker                                                  | `[]`                                                  |
 | `allowedUserIds`                                         | Whitelist user ID (rỗng = tất cả)                                           | `[]`                                                  |
 | `logger.{maxLinesPerFile,logCacheThreshold}`             | Giới hạn log file / cache                                                     | `1000` / `1000`                                       |
 | `reaction.debounceMs`                                    | Debounce reaction                                                            | `2000`                                                |
-| `friendRequest.{autoAcceptDelayMin/MaxMs}`               | Auto-accept delay                                                            | `2000` / `5000`                                       |
+| `friendRequest.{autoAcceptDelayMin/MaxMs}`               | Auto-accept delay (giữ setting nhưng friend tools đã bỏ Phase 2)             | `2000` / `5000`                                       |
 | `messageChunker.maxMessageLength`                        | Chia nhỏ tin nhắn dài                                                         | `1800`                                                |
 | `messageStore.{maxCachePerThread,recentMessageWindowMs,maxUndoTimeMs}` | Cache thread / undo window                            | `20` / `300000` / `120000` (2 phút)                   |
 | `edgeTts.{defaultVoice,defaultRate,defaultVolume,defaultPitch}` | Default Microsoft Edge TTS                                      | `"vi-VN-HoaiMyNeural"`, `"+0%"`, `"+0%"`, `"+0Hz"`   |
@@ -141,99 +146,37 @@ Xem schema đầy đủ trong `apps/bot/src/core/config/config.schema.ts`.
 
 ## 🔌 Modules & Tools
 
-Plugins bật/tắt qua `settings.json` → `modules.*` (default: tất cả `true`). Tổng cộng **44 tools** trên 6 modules. Đếm từ mỗi `tools/index.ts`.
+Plugins bật/tắt qua `settings.json` → `modules.*`. Tổng cộng **18 tools trên 2 modules** (Phase 2 — đã bỏ `chat` 1, `task` 2, `system` 1, `media` 2, `social` 20 từ tổng cũ 44).
 
-### Chat Module — 1 tool
-
-| Tool           | Mô tả                                                                  |
-| -------------- | ---------------------------------------------------------------------- |
-| `clearHistory` | Xóa toàn bộ lịch sử hội thoại của thread hiện tại (cả memory + database). |
-
-### Media Module — 3 tools
+### Media Module — 1 tool
 
 | Tool            | Mô tả                                                                                                                          | Deps                            |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| `createChart`   | Tạo biểu đồ (bar, line, pie, doughnut, radar, polarArea) → trả về PNG **buffer**. Response pipeline tự gửi ảnh qua Zalo (không cần `[image:]` tag). | chart.js + chartjs-node-canvas   |
-| `createFile`    | Tạo tài liệu `.docx`, `.pdf`, `.pptx`, `.xlsx` từ markdown nội dung. `solveMath` dùng dưới để xuất `.docx` có công thức KaTeX. | docx, pptxgenjs, pdfkit, exceljs |
-| `textToSpeech`  | Text → speech (MP3, ≤5000 ký tự). Hỗ trợ nhiều giọng Neural (`vi-VN-HoaiMyNeural`, `en-US-AriaNeural`, …).                       | msedge-tts (Microsoft Edge TTS)   |
+| `textToSpeech`  | Text → speech (MP3, ≤5000 ký tự). Hỗ trợ nhiều giọng Neural (`vi-VN-HoaiMyNeural`, `en-US-AriaNeural`, …). Marketing: đọc quảng cáo SP, voice welcome. | msedge-tts (Microsoft Edge TTS)   |
 
-### Social Module — 37 tools
+### Social Module — 17 tools
 
-#### User & Friends (6)
+#### User & Group lookup (2)
 
 | Tool                  | Mô tả                                                        |
 | --------------------- | ------------------------------------------------------------ |
-| `getUserInfo`         | Lấy profile Zalo của một userId (UID).                       |
-| `getAllFriends`       | Lấy danh sách bạn bè của bot (limit 50–200).                 |
-| `getFriendOnlines`    | Lấy bạn bè đang online (chấm xanh).                         |
-| `findUserByPhone`     | Tìm user qua SĐT (trả UID, tên, avatar).                    |
-| `sendFriendRequest`   | Gửi lời mời kết bạn (≤150 ký tự nhắn).                      |
-| `forwardMessage`      | Forward text/media đến 1–5 người/nhóm. Sticker không forward được. |
+| `getUserInfo`         | Lấy profile Zalo của một userId.                              |
+| `getGroupMembers`     | Danh sách thành viên nhóm (kèm role, có cache). Cần cho tag/mention. |
 
-#### Nhóm — info (1)
+#### Quảng bá (5)
 
-| Tool           | Mô tả                                                                       |
-| -------------- | --------------------------------------------------------------------------- |
-| `getGroupInfo` | Chi tiết nhóm: tên, creatorId, adminIds, settings, số thành viên.        |
+| Tool            | Mô tả                                                                  |
+| --------------- | ---------------------------------------------------------------------- |
+| `createNote`    | Tạo + ghim thông báo quan trọng lên đầu nhóm (Board).                  |
+| `editNote`      | Sửa ghi chú đã tạo.                                                   |
+| `getListBoard`  | Lấy danh sách Note + Poll trong nhóm.                                  |
+| `createPoll`    | Tạo bình chọn trong nhóm (≥2 options, multi-choice, anonymous, …).     |
+| `getPollDetail` | Lấy chi tiết bình chọn (question, options, votes).                     |
+| `lockPoll`      | Khóa poll, không cho vote nữa.                                        |
 
-#### Nhóm — members (6)
+(Đã bỏ `votePoll` Phase 2 — bot không tự vote, chỉ user vote.)
 
-| Tool                   | Mô tả                                                |
-| ---------------------- | ---------------------------------------------------- |
-| `getGroupMembers`      | Danh sách thành viên nhóm (kèm role, có cache).      |
-| `getPendingMembers`    | Đang chờ duyệt vào nhóm.                            |
-| `reviewPendingMembers` | Duyệt / từ chối (`memberIds[]`, `isApprove`).       |
-| `addMember`            | Thêm / mời người vào nhóm.                           |
-| `kickMember`           | Kick thành viên (bot phải là Admin).                 |
-| `blockMember`          | Chặn thành viên vào lại nhóm.                          |
-
-#### Nhóm — settings & roles (6)
-
-| Tool                  | Mô tả                                                                                  |
-| --------------------- | -------------------------------------------------------------------------------------- |
-| `updateGroupSettings` | Đổi setting: `blockName`, `signAdminMsg`, `joinAppr`, `lockSendMsg`, `lockCreatePost`, `lockCreatePoll`. |
-| `changeGroupName`     | Đổi tên nhóm.                                                                          |
-| `changeGroupAvatar`   | Đổi avatar nhóm (file path hoặc URL http/https).                                       |
-| `addGroupDeputy`      | Bổ nhiệm Phó nhóm (cần Owner).                                                        |
-| `removeGroupDeputy`   | Cách chức Phó nhóm → Member thường.                                                    |
-| `changeGroupOwner`    | **Cảnh báo**: chuyển quyền Trưởng nhóm (mất quyền Owner).                                |
-
-#### Nhóm — link (4)
-
-| Tool                 | Mô tả                                            |
-| -------------------- | ------------------------------------------------ |
-| `getGroupLinkDetail` | Lấy invite link của nhóm.                          |
-| `enableGroupLink`    | Bật invite link.                                   |
-| `disableGroupLink`   | Tắt invite link.                                   |
-| `getGroupLinkInfo`   | Lấy thông tin nhóm qua link `zalo.me/g/...`.        |
-
-#### Nhóm — lifecycle (4)
-
-| Tool            | Mô tả                                                                                |
-| --------------- | ------------------------------------------------------------------------------------ |
-| `createGroup`   | Tạo nhóm mới; **Bot tự làm Trưởng nhóm**. Tự thêm `senderId` vào members.        |
-| `joinGroupLink` | Bot tham gia nhóm qua link.                                                         |
-| `leaveGroup`    | Bot rời nhóm (option `silent=true` để rời âm thầm).                                |
-| `disperseGroup` | **Nguy hiểm**: giải tán nhóm (cần Owner + `confirm=true` — không thể hoàn tác).   |
-
-#### Poll (4)
-
-| Tool             | Mô tả                                                              |
-| ---------------- | ------------------------------------------------------------------ |
-| `createPoll`     | Tạo bình chọn trong nhóm (≥2 options, multi-choice, anonymous, ...). |
-| `getPollDetail`  | Lấy chi tiết bình chọn (question, options, votes).                 |
-| `votePoll`       | Bot vote cho poll (theo `optionIds[]`).                           |
-| `lockPoll`       | Khóa poll, không cho vote nữa.                                    |
-
-#### Board / Note (3)
-
-| Tool            | Mô tả                                                                |
-| --------------- | -------------------------------------------------------------------- |
-| `createNote`    | Tạo ghi chú / thông báo ghim đầu nhóm, trả `topic_id`.              |
-| `editNote`      | Sửa ghi chú đã tạo.                                                 |
-| `getListBoard`  | Lấy danh sách Note + Poll trong nhóm.                                |
-
-#### Reminder (3)
+#### Lên lịch (3)
 
 | Tool             | Mô tả                                                                                  |
 | ---------------- | -------------------------------------------------------------------------------------- |
@@ -241,20 +184,23 @@ Plugins bật/tắt qua `settings.json` → `modules.*` (default: tất cả `tr
 | `getReminder`    | Xem chi tiết một nhắc hẹn.                                                            |
 | `removeReminder` | Xóa nhắc hẹn.                                                                          |
 
-### System Module — 1 tool
+#### Basic Group Management (6)
 
-| Tool     | Mô tả                            |
-| -------- | -------------------------------- |
-| `qrCode` | Tạo QR code từ text/URL.         |
+| Tool                       | Mô tả                                                |
+| -------------------------- | ---------------------------------------------------- |
+| `getGroupInfo`             | Chi tiết nhóm: tên, creatorId, adminIds, settings, số thành viên. |
+| `kickMember`               | Kick thành viên (bot phải là Admin).                 |
+| `getPendingMembers`        | Đang chờ duyệt vào nhóm.                            |
+| `reviewPendingMembers`     | Duyệt / từ chối (`memberIds[]`, `isApprove`).       |
+| `getGroupLinkDetail`       | Lấy invite link của nhóm (read-only).                |
+| `getGroupLinkInfo`         | Xem trước thông tin nhóm qua link `zalo.me/g/...`.    |
 
-### Task Module — 2 tools
-
-| Tool         | Mô tả                                                                                                          |
-| ------------ | -------------------------------------------------------------------------------------------------------------- |
-| `solveMath`  | Giải toán, xuất file `.docx` có render KaTeX (`$inline$`, `$$block$$`). Params: `problem`, `solution`, `title`. |
-| `flush_logs` | Flush log ngay qua Zalo cho admin (không cần đợi đủ 1000 dòng — dùng khi debug gấp).                            |
-
-> ⚠ Tên tool đăng ký với AI là `flush_logs` (có underscore), không phải `flushLogs`. Giữ nguyên khi viết test/prompt.
+> **Đã bỏ Phase 2** (admin-heavy, không cần cho marketing bot):
+> `blockMember` `addMember` `changeGroupName` `changeGroupAvatar` `updateGroupSettings`
+> `changeGroupOwner` `addGroupDeputy` `removeGroupDeputy`
+> `enableGroupLink` `disableGroupLink` `createGroup` `joinGroupLink` `leaveGroup` `disperseGroup`
+> `getAllFriends` `getFriendOnlines` `findUserByPhone` `sendFriendRequest` `forwardMessage`
+> `createChart` `createFile` `solveMath` `clearHistory` `qrCode` `flush_logs` `votePoll`
 
 ---
 
@@ -297,7 +243,7 @@ Mounted tại `/api/*` trong `apps/bot/src/infrastructure/api/index.ts`. Tất c
 | `GET /`                                | `api/index.ts`                          | API index (list endpoints).                                                                 |
 | `GET /health`                           | `api/index.ts`                          | Health check (luôn OK khi bot chạy).                                                         |
 | `GET /api/settings`                    | `api/settings.api.ts`                   | Toàn bộ settings (đã Zod-validated).                                                        |
-| `GET /api/settings/schema/all`         | `api/settings.api.ts`                   | Danh sách key cấp-1 của schema (`adminUserId`, `bot`, `gemini`, …).                          |
+| `GET /api/settings/schema/all`         | `api/settings.api.ts`                   | Danh sách key cấp-1 của schema.                                                             |
 | `GET /api/settings/:key`               | `api/settings.api.ts`                   | Một section (`bot`, `gemini`, …).                                                            |
 | `PUT /api/settings`                    | `api/settings.api.ts`                   | Replace toàn bộ. Validate + save + notify listeners → CONFIG reload.                       |
 | `PATCH /api/settings/:key`             | `api/settings.api.ts`                   | Merge vào một section.                                                                       |
@@ -305,25 +251,17 @@ Mounted tại `/api/*` trong `apps/bot/src/infrastructure/api/index.ts`. Tất c
 | `GET /api/stats/overview`              | `api/stats.api.ts`                      | `{messages, messagesLast24h, uptime, timestamp}`.                                          |
 | `GET /api/stats/messages?days=N`       | `api/stats.api.ts`                      | Tin nhắn group theo ngày & role.                                                            |
 | `GET /api/stats/active-threads?N`      | `api/stats.api.ts`                      | Top N thread nhiều tin nhắn nhất.                                                            |
-| `GET /api/history?page&limit&threadId&role` | `api/history.api.ts`                | Paginated history (role ∈ `user`/`model`).                                                  |
-| `GET /api/history/threads?limit=N`     | `api/history.api.ts`                    | List threads (count, first/last timestamp).                                                 |
-| `GET /api/history/thread/:threadId`    | `api/history.api.ts`                    | Lịch sử 1 thread (oldest first).                                                            |
+| `GET /api/history?page&limit&threadId&role` | `api/history.api.ts`                | Paginated history.                                                                         |
+| `GET /api/history/threads?limit=N`     | `api/history.api.ts`                    | List threads.                                                                               |
+| `GET /api/history/thread/:threadId`    | `api/history.api.ts`                    | Lịch sử 1 thread.                                                                           |
 | `DELETE /api/history/thread/:threadId` | `api/history.api.ts`                    | Xóa lịch sử 1 thread.                                                                       |
 | `DELETE /api/history/old?days=N`       | `api/history.api.ts`                    | Xóa mọi tin cũ hơn `N` ngày.                                                                |
 | `GET /api/logs`                        | `api/logs.api.ts`                       | List log folder trong `logs/`.                                                               |
 | `GET /api/logs/:folder`                | `api/logs.api.ts`                       | List file trong folder.                                                                      |
-| `GET /api/logs/:folder/:file?lines&offset` | `api/logs.api.ts`                  | Đọc N dòng cuối của file (offset để paging).                                                 |
-| `GET /api/logs/file/unauthorized`      | `api/logs.api.ts`                       | Đọc `logs/unauthorized.json`.                                                               |
+| `GET /api/logs/:folder/:file`          | `api/logs.api.ts`                       | Đọc N dòng cuối của file.                                                                    |
 | `GET /api/logs/download/:folder/:file` | `api/logs.api.ts`                       | Download file log.                                                                          |
-| `DELETE /api/logs/:folder`             | `api/logs.api.ts`                       | Xóa folder log.                                                                              |
-| `GET /api/backup`                      | `api/backup.api.ts`                     | List `data/backups/*.db`.                                                                    |
-| `POST /api/backup`                     | `api/backup.api.ts`                     | WAL checkpoint → copy DB vào `data/backups/backup-<ISO>.db`.                              |
-| `POST /api/backup/restore/:name`       | `api/backup.api.ts`                     | Tạo `pre-restore-*.db`, restore, xóa WAL/SHM, reinit.                                     |
-| `GET /api/backup/download/:name`      | `api/backup.api.ts`                     | Download một file backup.                                                                   |
-| `POST /api/backup/upload`              | `api/backup.api.ts`                     | Multipart upload `.db`.                                                                     |
-| `GET /api/backup/info`                 | `api/backup.api.ts`                     | Path/size/modified + table counts (`history`, `sent_messages`).                              |
-| `DELETE /api/backup/database`          | `api/backup.api.ts`                     | Tạo `pre-delete-*.db`, xóa `.db/-wal/-shm`, reinit.                                         |
-| `DELETE /api/backup/:name`             | `api/backup.api.ts`                     | Xóa một file backup.                                                                         |
+| `DELETE /api/logs/:folder`             | `api/logs.api.ts`                       | Xóa folder log.                                                                             |
+| `GET /api/backup` / `POST /api/backup` / `POST /api/backup/restore/:name` / `POST /api/backup/upload` / `DELETE /api/backup/database` / `DELETE /api/backup/:name` | `api/backup.api.ts` | List / tạo / restore / download / upload / reset database. |
 
 ---
 
@@ -338,18 +276,14 @@ zia/
 │   │   │   ├── core/                          # Framework (base, config, container, errors,
 │   │   │   │                                    event-bus, logger, plugin-manager, tool-registry, types.ts)
 │   │   │   ├── modules/
-│   │   │   │   ├── chat/        (1 tool)      # clearHistory
-│   │   │   │   ├── media/       (3 tools)     # createChart, createFile, textToSpeech (+ services/edgeTtsClient.ts)
-│   │   │   │   ├── social/      (37 tools)    # user/friends/group/poll/board/reminder
-│   │   │   │   ├── system/      (1 tool)      # qrCode (under tools/utility/)
-│   │   │   │   ├── task/        (2 tools)     # solveMath, flush_logs
-│   │   │   │   └── gateway/                   # Message pipeline (không export tool)
+│   │   │   │   ├── gateway/                   # Message pipeline (không export tool)
+│   │   │   │   ├── media/       (1 tool)      # textToSpeech (+ services/edgeTtsClient.ts)
+│   │   │   │   └── social/      (17 tools)    # basic group mgmt + polls/notes/reminders
 │   │   │   ├── infrastructure/                # External services
 │   │   │   │   ├── ai/                        # Gemini provider (multi-key rotation)
 │   │   │   │   ├── api/                       # Hono REST: index + settings/stats/logs/history/backup
 │   │   │   │   ├── database/                  # SQLite + Drizzle (schema.ts, connection.ts, database.service.ts)
 │   │   │   │   └── messaging/                 # Zalo service (zca-js wrapper, sleepMode, zaloLogTransport)
-│   │   │   ├── libs/                          # docx-builder, pptx-builder (cho createFile)
 │   │   │   └── shared/                        # utils, types, schemas (Zod)
 │   │   ├── tests/                             # Integration + E2E (bun test)
 │   │   ├── drizzle/                           # Generated migrations
@@ -368,12 +302,12 @@ zia/
 
 | Component          | File                          | Vai trò                                                                                |
 | ------------------ | ----------------------------- | -------------------------------------------------------------------------------------- |
-| `EventBus`         | `event-bus/`                  | Pub/sub message bus — modules giao tiếp qua event thay vì gọi trực tiếp.               |
-| `ServiceContainer` | `container/`                  | Dependency injection — đăng ký singleton (`Settings`, `Log transports`, …).              |
-| `ModuleManager`    | `plugin-manager/`             | Lifecycle: `register → load → start`. Thứ tự register cố định (gateway → system → chat → media → social → task). |
+| `EventBus`         | `event-bus/`                  | Pub/sub message bus.                                                                   |
+| `ServiceContainer` | `container/`                  | Dependency injection singleton.                                                        |
+| `ModuleManager`    | `plugin-manager/`             | Lifecycle: `register → load → start`. Thứ tự register cố định (gateway → media → social). |
 | `ToolRegistry`     | `tool-registry/`              | Resolve tool name → `ToolDefinition`. Validate params với Zod. Parse `[tool:NAME]{json}[/tool]`. |
 | `BaseModule` / `BaseTool` | `base/`                  | Abstract base cho plugin author.                                                        |
-| `Logger`           | `logger/`                     | Pino + transports (console/file/Zalo). File logger rotate theo `settings.logger.*`.    |
+| `Logger`           | `logger/`                     | Pino + transports (console/file/Zalo).                                                 |
 
 ---
 
@@ -407,14 +341,13 @@ cd apps/bot && docker-compose up -d
 ```bash
 bun run test                        # tất cả (integration + e2e)
 bun run test:integration            # subset integration
-bun run --cwd apps/bot test:system  # test các tool trong modules/system
 bun run --cwd apps/bot test:ai      # test Gemini/AI integration
 bun run --cwd apps/bot test:e2e     # e2e (cần ZALO_CREDENTIALS_BASE64 + GEMINI_API_KEY)
 ```
 
 ---
 
-## 🛠 Công nghệ (từ `apps/bot/package.json` + `apps/web/package.json`)
+## 🛠 Công nghệ (Phase 2)
 
 ### Bot
 
@@ -422,23 +355,21 @@ bun run --cwd apps/bot test:e2e     # e2e (cần ZALO_CREDENTIALS_BASE64 + GEMIN
 | --------------------- | --------------------------------------------------------------------------------------------- |
 | Runtime               | Bun 1.0+                                                                                     |
 | Ngôn ngữ              | TypeScript 7.x (compiler `bun-types`)                                                         |
-| AI                    | `@google/genai` 2.11.x — Gemini 3.1 Flash Lite (configurable qua `gemini.models[]`)         |
+| AI                    | `@google/genai` 2.11.x — Gemini 3.1 Flash Lite                                              |
 | Zalo SDK              | `zca-js` 2.1.x                                                                               |
-| Database              | SQLite + `drizzle-orm` 0.45.x + `better-sqlite3` + `drizzle-kit` migrations                 |
-| HTTP API              | `hono` 4.12.x (Bun.serve runtime)                                                            |
-| TTS                   | `msedge-tts` (Microsoft Edge TTS — miễn phí, có Vietnamese voices)                          |
-| Charts                | `chart.js` + `chartjs-node-canvas` (PNG output)                                              |
-| Documents             | `docx` 9.7.x, `pptxgenjs` 4.0.x, `pdfkit` 0.19.x, `exceljs` 4.x                            |
-| Math/Docs             | `katex` 0.17.x (render LaTeX → PNG hoặc embedded trong DOCX)                                  |
+| Database              | SQLite + `drizzle-orm` 0.45.x + `better-sqlite3`                                            |
+| HTTP API              | `hono` 4.12.x (Bun.serve)                                                                    |
+| TTS                   | `msedge-tts` (Microsoft Edge TTS — miễn phí, Vietnamese voices)                            |
 | OCR                   | `tesseract.js`, `word-extractor`, `docx-parser`, `mammoth`, `officeparser`                 |
 | Image                 | `sharp` 0.35.x (resize/conversion), `satori` 0.26.x + `@resvg/resvg-js` (svg→png)         |
-| PDF                   | `pdfkit` + `svg-to-pdfkit`                                                                    |
 | HTTP client           | `ky` 2.x                                                                                      |
-| Stream                | `rxjs` 7.x (message buffer pipeline)                                                          |
-| Schema validation     | `zod` 4.x (tool params + settings)                                                            |
+| Stream                | `rxjs` 7.x                                                                                   |
+| Schema validation     | `zod` 4.x                                                                                    |
 | Linting               | Biome (`@biomejs/biome`)                                                                      |
 | Logger                | `pino` + `pino-pretty` + `pino-roll`                                                          |
-| Repair                | `jsonrepair` (sửa JSON model output lỗi)                                                       |
+| Repair                | `jsonrepair`                                                                                |
+
+> Phase 2 bỏ: `chart.js`, `chartjs-node-canvas`, `docx`, `pptxgenjs`, `pdfkit`, `exceljs`, `katex`. Có thể dọn tiếp ở `apps/bot/package.json` (PR tiếp theo).
 
 ### Web
 
@@ -452,14 +383,13 @@ bun run --cwd apps/bot test:e2e     # e2e (cần ZALO_CREDENTIALS_BASE64 + GEMIN
 | Theme         | `next-themes`                                                                  |
 | Animations    | Framer Motion                                                                   |
 | HTTP          | `axios`                                                                         |
-| Validation    | `zod` 4 (chia sẻ với bot)                                                         |
-| Notifications | `sonner` (toast)                                                                |
-| Hooks         | `usehooks-ts`                                                                   |
+| Validation    | `zod` 4                                                                         |
+| Notifications | `sonner`                                                                        |
 
 ---
 
 <div align="center">
 
-**Zia — Closed-source project. All rights reserved.**
+**Zia — Closed-source project. All rights reserved. (Phase 2: 18 marketing-focused tools)**
 
 </div>

@@ -373,8 +373,8 @@ QUY TẮC SỬ DỤNG TOOL (QUAN TRỌNG)
 - Người dùng KHÔNG CẦN BIẾT bạn đang dùng tool
 
 ⚠️ THẺ ĐÓNG TOOL: Luôn dùng [/tool] (KHÔNG có tên tool!)
-- ✅ ĐÚNG: [tool:createFile]{"filename":"test.docx"}[/tool]
-- ❌ SAI: [tool:createFile]{"filename":"test.docx"}[/tool:createFile]
+- ✅ ĐÚNG: [tool:textToSpeech]{"text":"Xin chào"}[/tool]
+- ❌ SAI: [tool:textToSpeech]{"text":"Xin chào"}[/tool:textToSpeech]
 
 VÍ DỤ SAI:
 ❌ "Để mình tìm kiếm cho bạn nhé..." [tool:google_search]
@@ -514,7 +514,7 @@ export const PROMPTS = {
           parts.push(`[${index}] ${senderPrefix}Link: ${item.url}`);
           break;
         case 'contact': {
-          // Bao gồm contactUserId để AI có thể gọi sendFriendRequest
+          // Bao gồm contactUserId để AI có thể nhắc đến user đó (dùng [card:userId])
           const contactInfo = [
             item.contactName || item.text || '(không rõ tên)',
             item.contactPhone ? `SĐT: ${item.contactPhone}` : null,
@@ -544,8 +544,8 @@ HƯỚNG DẪN QUAN TRỌNG VỀ INDEX:
 - Nếu không cần quote/react tin cụ thể, cứ trả lời bình thường
 
 HƯỚNG DẪN XỬ LÝ MEDIA:
-- Để chuyển tiếp file/ảnh/video/voice, hãy dùng tool [forwardMessage]
-- QUAN TRỌNG: Phải truyền đúng "msgType", "originalMsgId", "originalTimestamp" lấy từ thông tin MsgID, MsgType, Timestamp ở trên.
+- Ảnh/video/voice/file: bot tự xử lý inline qua Gemini multimodal (xem nội dung, tóm tắt, trả lời).
+- Khi cần nhắc đến user đã gửi contact, dùng cú pháp [card:userId].
 
 Hãy XEM/NGHE tất cả nội dung đính kèm và phản hồi phù hợp.`;
   },

@@ -73,12 +73,8 @@
     ]
   },
   "modules": {
-    "system": true,
-    "chat": true,
     "media": true,
-    "search": true,
-    "social": true,
-    "task": true
+    "social": true
   },
   "logger": {
     "maxLinesPerFile": 1000,
@@ -99,9 +95,6 @@
     "cleanupIntervalMs": 1800000,
     "recentMessageWindowMs": 300000,
     "maxUndoTimeMs": 120000
-  },
-  "userStore": {
-    "cacheTtlMs": 300000
   },
   "edgeTts": {
     "defaultVoice": "vi-VN-HoaiMyNeural",

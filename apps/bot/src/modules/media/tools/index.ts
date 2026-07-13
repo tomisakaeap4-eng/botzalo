@@ -1,6 +1,4 @@
 /**
- * Media Tools - Charts, files, images, TTS
+ * Media Tools - Text-to-speech
  */
-export { createChartTool } from './createChart.js';
-export { createFileTool } from './createFile/index.js';
 export { textToSpeechTool } from './textToSpeech.js';

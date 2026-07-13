@@ -106,49 +106,6 @@ describe.skipIf(SKIP)('E2E: Full Bot Flow', () => {
     }, E2E_CONFIG.timeout);
   });
 
-  describe('Tool Calling', () => {
-    test('Yêu cầu tính toán - Bot dùng tool solveMath', async () => {
-      if (!api) return;
-
-      const testMessage = 'Tính giúp tôi: (15 * 8) + (42 / 6) - 17';
-      e2eLog('SEND', `Sending math request: "${testMessage}"`);
-
-      await api.sendMessage(testMessage, TEST_THREAD_ID, THREAD_TYPE);
-      await waitForResponse(E2E_CONFIG.messageWaitMs + 5000); // Tool cần thêm thời gian
-
-      e2eLog('DONE', 'Math tool test complete');
-      expect(true).toBe(true);
-    }, E2E_CONFIG.timeout);
-  });
-
-  describe('File Creation', () => {
-    test('Yêu cầu tạo file Word - Bot tạo và gửi DOCX', async () => {
-      if (!api) return;
-
-      const testMessage = 'Tạo file word với nội dung: Báo cáo E2E Test - Ngày ' + new Date().toLocaleDateString('vi-VN');
-      e2eLog('SEND', `Sending DOCX request: "${testMessage}"`);
-
-      await api.sendMessage(testMessage, TEST_THREAD_ID, THREAD_TYPE);
-      await waitForResponse(E2E_CONFIG.messageWaitMs + 10000);
-
-      e2eLog('DONE', 'DOCX creation test complete');
-      expect(true).toBe(true);
-    }, E2E_CONFIG.timeout);
-
-    test('Yêu cầu tạo biểu đồ - Bot tạo và gửi chart', async () => {
-      if (!api) return;
-
-      const testMessage = 'Tạo biểu đồ cột với dữ liệu: Tháng 1: 100, Tháng 2: 150, Tháng 3: 200';
-      e2eLog('SEND', `Sending chart request: "${testMessage}"`);
-
-      await api.sendMessage(testMessage, TEST_THREAD_ID, THREAD_TYPE);
-      await waitForResponse(E2E_CONFIG.messageWaitMs + 10000);
-
-      e2eLog('DONE', 'Chart creation test complete');
-      expect(true).toBe(true);
-    }, E2E_CONFIG.timeout);
-  });
-
   describe('Conversation Context', () => {
     test('Bot nhớ context từ tin nhắn trước', async () => {
       if (!api) return;
@@ -194,8 +151,6 @@ describe.skipIf(SKIP)('E2E: Full Bot Flow', () => {
 📊 Tests Executed:
 • Basic Chat Flow
 • Multi-message Buffer
-• Tool Calling (Math)
-• File Creation (DOCX, Chart)
 • Conversation Context
 • Error Handling
 

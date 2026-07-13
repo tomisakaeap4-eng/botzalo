@@ -140,7 +140,7 @@ export const getListBoardTool: ToolDefinition = {
           notes,
           polls,
           summary: `=== GHI CHÚ (${notes.length}) ===\n${notesSummary}\n\n=== BÌNH CHỌN (${polls.length}) ===\n${pollsSummary}`,
-          hint: 'Dùng topic_id với editNote, poll_id với getPollDetail/votePoll/lockPoll',
+          hint: 'Dùng topic_id với editNote, poll_id với getPollDetail/lockPoll (votePoll đã bỏ)',
         },
       };
     } catch (error: any) {

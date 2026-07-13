@@ -28,12 +28,6 @@ export const TEST_SUITES = {
     toolRegistry: 'Tool Registry',
     context: 'Bot Context',
   },
-  system: {
-    edgeTts: 'Microsoft Edge TTS (miễn phí, cần kết nối Internet)',
-    createChart: 'Chart.js Chart Creation',
-    clearHistory: 'Clear Chat History',
-    solveMath: 'Math Solver',
-  },
   ai: {},
   database: {
     database: 'SQLite + Drizzle ORM',
@@ -60,9 +54,6 @@ export const TEST_SUITES = {
     messageBuffer: 'Message Buffer (RxJS)',
     mediaProcessor: 'Media Processor (Gemini)',
     responseHandler: 'Response Handler (Stream Callbacks)',
-  },
-  files: {
-    createFile: 'File Creation (DOCX, XLSX, PPTX)',
   },
   utils: {
     markdown: 'Markdown Parser & Converter',

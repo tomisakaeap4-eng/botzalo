@@ -1,29 +1,15 @@
 /**
- * Social Module - User info, friends, groups, polls, reminders, group admin
+ * Social Module - Basic group management, polls, notes, reminders, user lookup
+ *
+ * Positioning: Product/marketing/comms bot with basic group mgmt — không phải admin-bot.
  */
 import { BaseModule, type ITool, type ModuleMetadata } from '../../core/index.js';
 import {
-  addGroupDeputyTool,
-  addMemberTool,
-  blockMemberTool,
-  changeGroupAvatarTool,
-  changeGroupNameTool,
-  changeGroupOwnerTool,
-  // Group Creation & Join
-  createGroupTool,
   createNoteTool,
   createPollTool,
   createReminderTool,
-  disableGroupLinkTool,
-  disperseGroupTool,
   editNoteTool,
-  enableGroupLinkTool,
-  // Friend Request Tools
-  findUserByPhoneTool,
-  forwardMessageTool,
-  getAllFriendsTool,
-  getFriendOnlinesTool,
-  // Group Admin Tools
+  // Group Admin - keep 6 tools
   getGroupInfoTool,
   getGroupLinkDetailTool,
   getGroupLinkInfoTool,
@@ -33,37 +19,26 @@ import {
   getPollDetailTool,
   getReminderTool,
   getUserInfoTool,
-  joinGroupLinkTool,
   kickMemberTool,
-  // Group Leave & Disperse (Destructive)
-  leaveGroupTool,
   lockPollTool,
-  removeGroupDeputyTool,
   removeReminderTool,
   reviewPendingMembersTool,
-  sendFriendRequestTool,
-  updateGroupSettingsTool,
-  votePollTool,
 } from './tools/index.js';
 
 export class SocialModule extends BaseModule {
   readonly metadata: ModuleMetadata = {
     name: 'social',
-    description: 'Social tools for user info, friends, groups, polls, reminders, and group admin',
-    version: '1.0.0',
+    description: 'Social tools for basic group management, polls, notes, and reminders',
+    version: '2.0.0',
   };
 
   private _tools: ITool[] = [
-    // User & Friends
+    // User lookup
     getUserInfoTool,
-    getAllFriendsTool,
-    getFriendOnlinesTool,
     getGroupMembersTool,
-    forwardMessageTool,
-    // Poll
+    // Poll (no votePoll — chỉ user vote)
     createPollTool,
     getPollDetailTool,
-    votePollTool,
     lockPollTool,
     // Board/Note
     createNoteTool,
@@ -75,34 +50,13 @@ export class SocialModule extends BaseModule {
     removeReminderTool,
     // Group Admin - Info
     getGroupInfoTool,
-    // Group Admin - Member Management
+    // Group Admin - Member Management (basic)
     kickMemberTool,
-    blockMemberTool,
-    addMemberTool,
     getPendingMembersTool,
     reviewPendingMembersTool,
-    // Group Admin - Settings
-    updateGroupSettingsTool,
-    changeGroupNameTool,
-    changeGroupAvatarTool,
-    // Group Admin - Roles
-    addGroupDeputyTool,
-    removeGroupDeputyTool,
-    changeGroupOwnerTool,
-    // Group Admin - Link
+    // Group Admin - Link (chỉ đọc link, không enable/disable)
     getGroupLinkDetailTool,
-    enableGroupLinkTool,
-    disableGroupLinkTool,
     getGroupLinkInfoTool,
-    // Group Creation & Join
-    createGroupTool,
-    joinGroupLinkTool,
-    // Group Leave & Disperse (Destructive)
-    leaveGroupTool,
-    disperseGroupTool,
-    // Friend Request
-    findUserByPhoneTool,
-    sendFriendRequestTool,
   ];
 
   get tools(): ITool[] {

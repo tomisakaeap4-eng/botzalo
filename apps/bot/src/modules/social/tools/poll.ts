@@ -1,6 +1,6 @@
 /**
  * Poll Tools - Quản lý bình chọn trong nhóm Zalo
- * API: createPoll, getPollDetail, votePoll, lockPoll
+ * Phase 2: chỉ createPoll/getPollDetail/lockPoll (votePoll bỏ — bot không tự vote).
  */
 
 import { debugLog, logZaloAPI } from '../../../core/logger/logger.js';
@@ -97,7 +97,7 @@ export const createPollTool: ToolDefinition = {
           question: question,
           options: options,
           message: `Đã tạo bình chọn "${question}" với ${options.length} lựa chọn`,
-          hint: 'Lưu poll_id để vote, lock hoặc xem chi tiết sau',
+          hint: 'Lưu poll_id để lock hoặc xem chi tiết sau (user tự vote trên Zalo UI)',
         },
       };
     } catch (error: any) {
@@ -151,65 +151,12 @@ export const getPollDetailTool: ToolDefinition = {
           question: detail.question,
           options: detail.options,
           summary: optionsSummary,
-          hint: 'Dùng option_id để vote với votePoll',
+          hint: 'Dùng option_id để biết chi tiết vote của từng option (user tự vote trên Zalo UI)',
         },
       };
     } catch (error: any) {
       debugLog('TOOL:getPollDetail', `Error: ${error.message}`);
       return { success: false, error: `Lỗi lấy chi tiết bình chọn: ${error.message}` };
-    }
-  },
-};
-
-// ═══════════════════════════════════════════════════
-// VOTE POLL - Bỏ phiếu
-// ═══════════════════════════════════════════════════
-
-export const votePollTool: ToolDefinition = {
-  name: 'votePoll',
-  description: 'Bot bỏ phiếu cho bình chọn. Cần poll_id và option_id (lấy từ getPollDetail).',
-  parameters: [
-    {
-      name: 'pollId',
-      type: 'number',
-      description: 'ID của bình chọn',
-      required: true,
-    },
-    {
-      name: 'optionIds',
-      type: 'object',
-      description: 'Mảng ID các lựa chọn muốn vote (VD: [1001] hoặc [1001, 1002])',
-      required: true,
-    },
-  ],
-  execute: async (params: Record<string, any>, context: ToolContext): Promise<ToolResult> => {
-    try {
-      const { pollId, optionIds } = params;
-
-      if (!pollId) {
-        return { success: false, error: 'Thiếu pollId' };
-      }
-
-      if (!Array.isArray(optionIds) || optionIds.length === 0) {
-        return { success: false, error: 'Cần ít nhất 1 option_id để vote' };
-      }
-
-      debugLog('TOOL:votePoll', `Voting poll ${pollId} with options: ${optionIds.join(', ')}`);
-
-      const result = await context.api.votePoll(Number(pollId), optionIds.map(Number));
-      logZaloAPI('tool:votePoll', { pollId, optionIds }, result);
-
-      return {
-        success: true,
-        data: {
-          poll_id: pollId,
-          voted_options: optionIds,
-          message: `Đã vote cho ${optionIds.length} lựa chọn`,
-        },
-      };
-    } catch (error: any) {
-      debugLog('TOOL:votePoll', `Error: ${error.message}`);
-      return { success: false, error: `Lỗi vote: ${error.message}` };
     }
   },
 };

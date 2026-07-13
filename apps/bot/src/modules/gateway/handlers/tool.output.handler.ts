@@ -1,9 +1,10 @@
 /**
  * Tool Output Handler - Xử lý output từ tools
  * Quyết định gửi file/media qua Zalo hay trả text về AI
+ *
+ * Phase 2: chỉ giữ textToSpeech (đã bỏ createFile/createChart/solveMath/qrCode).
  */
 
-import { CONFIG } from '../../../core/config/config.js';
 import { debugLog } from '../../../core/index.js';
 import type { ToolCall, ToolResult } from '../../../core/types.js';
 import { getThreadType } from '../../../shared/utils/message/messageSender.js';
@@ -13,7 +14,7 @@ import { getThreadType } from '../../../shared/utils/message/messageSender.js';
 // ═══════════════════════════════════════════════════
 
 /**
- * Gửi voice message từ TTS tool result
+ * Gửi voice message từ TTS tool result (Microsoft Edge TTS)
  */
 export async function sendVoice(api: any, threadId: string, audioBuffer: Buffer): Promise<void> {
   const threadType = getThreadType(threadId);
@@ -40,89 +41,6 @@ export async function sendVoice(api: any, threadId: string, audioBuffer: Buffer)
   console.log(`[Tool] ✅ Đã gửi voice message!`);
 }
 
-/**
- * Gửi ảnh từ tool result
- */
-export async function sendImage(
-  api: any,
-  threadId: string,
-  buffer: Buffer,
-  filename: string,
-): Promise<void> {
-  const threadType = getThreadType(threadId);
-  console.log(`[Tool] 📊 Đang gửi ảnh ${filename} (${buffer.length} bytes)...`);
-  debugLog(
-    'TOOL:IMG',
-    `Sending image: ${filename}, size: ${buffer.length}, threadType: ${threadType}`,
-  );
-
-  const attachment = {
-    filename,
-    data: buffer,
-    metadata: {
-      width: 800,
-      height: 600,
-      totalSize: buffer.length,
-    },
-  };
-
-  await api.sendMessage({ msg: '', attachments: [attachment] }, threadId, threadType);
-  console.log(`[Tool] ✅ Đã gửi ảnh ${filename}!`);
-  debugLog('TOOL:IMG', `Image sent successfully: ${filename}`);
-}
-
-/**
- * Gửi file document từ tool result
- */
-export async function sendDocument(
-  api: any,
-  threadId: string,
-  buffer: Buffer,
-  filename: string,
-): Promise<void> {
-  const threadType = getThreadType(threadId);
-  console.log(`[Tool] 📄 Đang gửi file ${filename} (${buffer.length} bytes)...`);
-  debugLog(
-    'TOOL:DOC',
-    `Sending document: ${filename}, size: ${buffer.length}, threadType: ${threadType}`,
-  );
-
-  const attachment = {
-    filename,
-    data: buffer,
-    metadata: {
-      width: 0,
-      height: 0,
-      totalSize: buffer.length,
-    },
-  };
-
-  await api.sendMessage({ msg: '', attachments: [attachment] }, threadId, threadType);
-  console.log(`[Tool] ✅ Đã gửi file ${filename}!`);
-  debugLog('TOOL:DOC', `Document sent successfully: ${filename}`);
-}
-
-/**
- * Gửi nhiều ảnh với delay
- */
-export async function sendImages(
-  api: any,
-  threadId: string,
-  images: Array<{ buffer: Buffer; mimeType: string }>,
-  prefix: string,
-): Promise<void> {
-  const imageDelay = CONFIG.responseHandler?.imageDelayMs ?? 500;
-  for (let i = 0; i < images.length; i++) {
-    const img = images[i];
-    const ext = img.mimeType.includes('png') ? 'png' : img.mimeType.includes('gif') ? 'gif' : 'jpg';
-    const filename = `${prefix}_${Date.now()}_${i}.${ext}`;
-    await sendImage(api, threadId, img.buffer, filename);
-    if (i < images.length - 1) {
-      await new Promise((r) => setTimeout(r, imageDelay));
-    }
-  }
-}
-
 // ═══════════════════════════════════════════════════
 // TOOL OUTPUT HANDLERS MAP
 // ═══════════════════════════════════════════════════
@@ -134,34 +52,6 @@ const outputHandlers: Record<string, OutputHandler> = {
   textToSpeech: async (api, threadId, result) => {
     if (result.data?.audio) {
       await sendVoice(api, threadId, result.data.audio);
-    }
-  },
-
-  // File (Word, txt, json, code, etc.) → send file
-  createFile: async (api, threadId, result) => {
-    if (result.data?.fileBuffer) {
-      await sendDocument(api, threadId, result.data.fileBuffer, result.data.filename);
-    }
-  },
-
-  // Chart → send image
-  createChart: async (api, threadId, result) => {
-    if (result.data?.imageBuffer) {
-      await sendImage(api, threadId, result.data.imageBuffer, result.data.filename);
-    }
-  },
-
-  // solveMath → send DOCX
-  solveMath: async (api, threadId, result) => {
-    if (result.data?.fileBuffer) {
-      await sendDocument(api, threadId, result.data.fileBuffer, result.data.filename);
-    }
-  },
-
-  // qrCode → send QR code image
-  qrCode: async (api, threadId, result) => {
-    if (result.data?.imageBuffers) {
-      await sendImages(api, threadId, result.data.imageBuffers, 'qrcode');
     }
   },
 };

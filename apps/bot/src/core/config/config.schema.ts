@@ -88,13 +88,10 @@ export const FetchConfigSchema = z.object({
   maxTextConvertSizeMB: z.coerce.number().min(1).default(20),
 });
 
-// Modules config schema
+// Modules config schema (Phase 2: only media + social — chat/system/task removed)
 export const ModulesConfigSchema = z.object({
-  system: z.boolean().default(true),
-  chat: z.boolean().default(true),
   media: z.boolean().default(true),
   social: z.boolean().default(true),
-  task: z.boolean().default(true),
 });
 
 // Stickers config schema
@@ -251,11 +248,8 @@ export const SettingsSchema = z.object({
     maxTextConvertSizeMB: 20,
   }),
   modules: ModulesConfigSchema.optional().default({
-    system: true,
-    chat: true,
     media: true,
     social: true,
-    task: true,
   }),
   stickers: StickersConfigSchema.optional().default({
     keywords: [],

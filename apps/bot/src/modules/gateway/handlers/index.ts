@@ -20,8 +20,5 @@ export {
 export {
   handleAllToolOutputs,
   handleToolOutput,
-  sendDocument,
-  sendImage,
-  sendImages,
   sendVoice,
 } from './tool.output.handler.js';

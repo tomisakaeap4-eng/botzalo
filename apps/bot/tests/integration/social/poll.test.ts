@@ -1,6 +1,7 @@
 /**
- * Integration Test: Poll Tools
- * Test chức năng tạo, xem, vote và khóa bình chọn
+ * Integration Test: Poll Tools (Phase 2)
+ *
+ * Phase 2 refactor: không test votePoll (bot không tự vote).
  */
 
 import { beforeEach, describe, expect, test } from 'bun:test';
@@ -8,7 +9,6 @@ import {
   createPollTool,
   getPollDetailTool,
   lockPollTool,
-  votePollTool,
 } from '../../../src/modules/social/tools/poll.js';
 import { mockToolContext } from '../setup.js';
 
@@ -34,18 +34,13 @@ const createMockApi = () => ({
     if (pollId === mockPollId) return mockPollDetail;
     throw new Error('Poll not found');
   },
-  votePoll: async (pollId: number, optionIds: number[]) => ({
-    success: true,
-    poll_id: pollId,
-    voted: optionIds,
-  }),
   lockPoll: async (pollId: number) => ({
     success: true,
     poll_id: pollId,
   }),
 });
 
-describe('Poll Tools Integration', () => {
+describe('Poll Tools Integration (Phase 2)', () => {
   let mockApi: ReturnType<typeof createMockApi>;
 
   beforeEach(() => {
@@ -176,7 +171,6 @@ describe('Poll Tools Integration', () => {
       expect(result.data.options).toHaveLength(3);
       expect(result.data.summary).toContain('Cơm');
       expect(result.data.summary).toContain('option_id');
-      expect(result.data.hint).toContain('votePoll');
     });
 
     test('lỗi khi thiếu pollId', async () => {
@@ -195,84 +189,6 @@ describe('Poll Tools Integration', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Lỗi lấy chi tiết');
-    });
-  });
-
-  // ═══════════════════════════════════════════════════
-  // VOTE POLL
-  // ═══════════════════════════════════════════════════
-
-  describe('votePoll', () => {
-    test('vote thành công với 1 option', async () => {
-      const context = { ...mockToolContext, api: mockApi, threadId: 'group-123' };
-
-      const result = await votePollTool.execute(
-        {
-          pollId: mockPollId,
-          optionIds: [1001],
-        },
-        context,
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.data.poll_id).toBe(mockPollId);
-      expect(result.data.voted_options).toEqual([1001]);
-      expect(result.data.message).toContain('1 lựa chọn');
-    });
-
-    test('vote thành công với nhiều options', async () => {
-      const context = { ...mockToolContext, api: mockApi, threadId: 'group-123' };
-
-      const result = await votePollTool.execute(
-        {
-          pollId: mockPollId,
-          optionIds: [1001, 1002],
-        },
-        context,
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.data.voted_options).toEqual([1001, 1002]);
-      expect(result.data.message).toContain('2 lựa chọn');
-    });
-
-    test('lỗi khi thiếu pollId', async () => {
-      const context = { ...mockToolContext, api: mockApi, threadId: 'group-123' };
-
-      const result = await votePollTool.execute({ optionIds: [1001] }, context);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('pollId');
-    });
-
-    test('lỗi khi optionIds rỗng', async () => {
-      const context = { ...mockToolContext, api: mockApi, threadId: 'group-123' };
-
-      const result = await votePollTool.execute(
-        {
-          pollId: mockPollId,
-          optionIds: [],
-        },
-        context,
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('option_id');
-    });
-
-    test('lỗi khi optionIds không phải array', async () => {
-      const context = { ...mockToolContext, api: mockApi, threadId: 'group-123' };
-
-      const result = await votePollTool.execute(
-        {
-          pollId: mockPollId,
-          optionIds: 1001,
-        },
-        context,
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('option_id');
     });
   });
 

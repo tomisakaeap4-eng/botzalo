@@ -318,13 +318,13 @@ CÁCH GỌI TOOL:
 - Cú pháp JSON (có body): [tool:tên_tool]{"param1": "giá_trị1"}[/tool]
 
 ⚠️ QUAN TRỌNG: Thẻ đóng PHẢI là [/tool] (KHÔNG có tên tool!)
-- ✅ ĐÚNG: [tool:createFile]{"filename":"test.docx"}[/tool]
-- ❌ SAI: [tool:createFile]{"filename":"test.docx"}[/tool:createFile]
+- ✅ ĐÚNG: [tool:textToSpeech]{"text":"Xin chào"}[/tool]
+- ❌ SAI: [tool:textToSpeech]{"text":"Xin chào"}[/tool:textToSpeech]
 
 VÍ DỤ:
 - Không có tham số: [tool:getUserInfo]
 - Tham số inline: [tool:getAllFriends limit=10]
-- Tham số JSON: [tool:createFile]{"filename":"report.docx","content":"Nội dung..."}[/tool]
+- Tham số JSON: [tool:textToSpeech]{"text":"Xin chào Việt Nam"}[/tool]
 
 QUY TẮC:
 1. Khi gọi tool, có thể kèm text thông báo ngắn

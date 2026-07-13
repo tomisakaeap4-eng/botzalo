@@ -35,7 +35,8 @@ export interface StreamCallbacks {
   onReaction?: (reaction: string) => Promise<void>;
   onSticker?: (keyword: string) => Promise<void>;
   onMessage?: (text: string, quoteIndex?: number) => Promise<void>;
-  onCard?: (userId?: string) => Promise<void>;
+  /** Bot chỉ gửi danh thiếp cá nhân của nó — callback không cần userId. */
+  onCard?: () => Promise<void>;
   onUndo?: (index: number | 'all' | { start: number; end: number }) => Promise<void>;
   onImage?: (url: string, caption?: string) => Promise<void>;
   onComplete?: () => void | Promise<void>;
@@ -100,7 +101,7 @@ const TAG_PATTERNS = [
   /\[quote:-?\d+\][\s\S]*?\[\/quote\]/gi,
   /\[msg\][\s\S]*?\[\/msg\]/gi,
   /\[undo:(?:-?\d+:-?\d+|-?\d+|all)\]/gi, // Hỗ trợ [undo:-1], [undo:-1:-3], [undo:all]
-  /\[card(?::\d+)?\]/gi, // CẤM truyền userId nên không cần capture \d+
+  /\[card\]/gi,
   /\[tool:\w+(?:\s+[^\]]*?)?\](?:\s*\{[\s\S]*?\}\s*\[\/tool\])?/gi,
   /\[image:https?:\/\/[^\]]+\][\s\S]*?\[\/image\]/gi,
 ];
@@ -114,7 +115,7 @@ const INLINE_TAG_PATTERNS = [
   /\[reaction:(\d+:)?\w+\]/gi,
   /\[sticker:\w+\]/gi,
   /\[undo:(?:-?\d+:-?\d+|-?\d+|all)\]/gi, // Hỗ trợ [undo:-1], [undo:-1:-3], [undo:all]
-  /\[card(?::\d+)?\]/gi, // CẤM truyền userId nên không cần capture \d+
+  /\[card\]/gi,
 ];
 
 function cleanInlineTags(text: string): string {
@@ -183,15 +184,12 @@ async function processInlineTags(
     }
   }
 
-  // Extract cards
-  // SECURITY/POLICY: Bot chỉ gửi danh thiếp CÁ NHÂN của bot, KHÔNG gửi danh thiếp user khác.
-  // Nếu AI emit [card:userId] (hallucination), ta vẫn parse được tag để nuốt text trong buffer,
-  // nhưng LUÔN gọi onCard(undefined) để gửi danh thiếp của bot - KHÔNG truyền userId.
-  for (const _match of text.matchAll(/\[card(?::\d+)?\]/gi)) {
-    const key = 'card:bot-self'; // single key — luôn là danh thiếp của bot
+  // Extract cards — bot chỉ gửi danh thiếp cá nhân, không có variant [card:userId]
+  for (const _match of text.matchAll(/\[card\]/gi)) {
+    const key = 'card:bot-self';
     if (!state.sentCards.has(key) && callbacks.onCard) {
       state.sentCards.add(key);
-      await callbacks.onCard(undefined); // force bot's own card (ignore captured userId)
+      await callbacks.onCard();
     }
   }
 }
@@ -317,15 +315,12 @@ async function processStreamChunk(state: ParserState, callbacks: StreamCallbacks
     }
   }
 
-  // Parse top-level [card:userId] hoặc [card]
-  // SECURITY/POLICY: Bot chỉ gửi danh thiếp CÁ NHÂN của bot, KHÔNG gửi danh thiếp user khác.
-  // Phải parse regex (để nuốt tag khỏi buffer text), nhưng LUÔN gọi onCard(undefined)
-  // → BỎ QUA captured userId, ép về danh thiếp của bot.
-  for (const _match of buffer.matchAll(/\[card(?::\d+)?\]/gi)) {
+  // Parse top-level [card] — không có variant userId
+  for (const _match of buffer.matchAll(/\[card\]/gi)) {
     const key = 'card:bot-self'; // single key để tránh duplicate send
     if (!state.sentCards.has(key) && callbacks.onCard) {
       state.sentCards.add(key);
-      await callbacks.onCard(undefined); // ⚠️ Luôn là danh thiếp CỦA BOT
+      await callbacks.onCard();
     }
   }
 

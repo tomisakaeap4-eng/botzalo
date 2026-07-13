@@ -106,13 +106,12 @@ describe('Stream Callbacks Behavior', () => {
   });
 });
 
-describe('Card Policy (Phase 2+)', () => {
+describe('Card Feature', () => {
   /**
-   * REGRESSION GUARD: Bot chỉ gửi danh thiếp CÁ NHÂN của bot.
-   * Khi AI hallucinate [card:userId] hoặc test truyền userId khác,
-   * `api.sendCard` PHẢI nhận `cardData.userId === bot-uid`, KHÔNG phải user khác.
+   * Bot chỉ gửi danh thiếp CÁ NHÂN của nó — lấy uid từ `api.getContext().uid`.
+   * Không có variant `[card:userId]`, `sendCard()` đã bỏ tham số userId.
    */
-  test('onCard với userId khác vẫn gửi danh thiếp của bot (defense-in-depth)', async () => {
+  test('onCard gửi danh thiếp cá nhân của bot (uid từ context)', async () => {
     let cardDataSent: any = null;
     const mockApi = {
       sendMessage: async () => ({}),
@@ -127,51 +126,31 @@ describe('Card Policy (Phase 2+)', () => {
 
     const callbacks = createStreamCallbacks(mockApi, 'test-thread');
 
-    // AI hallucinate [card:123456] (user khác) — phải bị bỏ qua
-    await callbacks.onCard?.('123456');
-
-    // Đảm bảo KHÔNG gửi danh thiếp user 123456
-    expect(cardDataSent).not.toBeNull();
-    expect(cardDataSent.userId).toBe('bot-uid-999');
-  });
-
-  test('onCard với userId = bot uid cũng gửi danh thiếp bot (idempotent)', async () => {
-    let cardDataSent: any = null;
-    const mockApi = {
-      sendMessage: async () => ({}),
-      addReaction: async () => ({}),
-      getStickers: async () => [],
-      sendCard: async (cardData: any) => {
-        cardDataSent = cardData;
-        return {};
-      },
-      getContext: () => ({ uid: 'bot-uid-999' }),
-    };
-
-    const callbacks = createStreamCallbacks(mockApi, 'test-thread');
-
-    await callbacks.onCard?.('bot-uid-999');
+    await callbacks.onCard?.();
 
     expect(cardDataSent).toEqual({ userId: 'bot-uid-999' });
   });
 
-  test('onCard với undefined (không có userId) cũng gửi danh thiếp bot', async () => {
-    let cardDataSent: any = null;
+  /**
+   * Fail-fast: nếu context thiếu uid, KHÔNG gọi api.sendCard để tránh malformed request.
+   */
+  test('onCard FAIL-FAST khi context thiếu uid — KHÔNG gọi api.sendCard', async () => {
+    let sendCardCalled = false;
     const mockApi = {
       sendMessage: async () => ({}),
       addReaction: async () => ({}),
       getStickers: async () => [],
-      sendCard: async (cardData: any) => {
-        cardDataSent = cardData;
+      sendCard: async () => {
+        sendCardCalled = true;
         return {};
       },
-      getContext: () => ({ uid: 'bot-uid-999' }),
+      getContext: () => ({}), // no uid
     };
 
     const callbacks = createStreamCallbacks(mockApi, 'test-thread');
 
-    await callbacks.onCard?.(undefined);
+    await callbacks.onCard?.();
 
-    expect(cardDataSent).toEqual({ userId: 'bot-uid-999' });
+    expect(sendCardCalled).toBe(false);
   });
 });

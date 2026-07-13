@@ -7,12 +7,10 @@ export interface AIMessage {
   sticker: string;
   quoteIndex: number;
   /**
-   * Presence flag (Phase 2 policy): LUÔN là chuỗi rỗng '' hoặc undefined.
-   * Bot KHÔNG gửi danh thiếp của user khác — sendCard() luôn gửi danh thiếp CÁ NHÂN của bot
-   * bất kể AI có hallucinate `[card:userId]` hay không.
-   * Type literal `'' | undefined` giúp compiler enforce policy: cố set giá trị khác rỗng → TS error.
+   * Presence flag: khi true, parser sẽ gọi sendCard() để gửi danh thiếp cá nhân của bot.
+   * Bot không hỗ trợ gửi danh thiếp user khác — không còn variant `[card:userId]`.
    */
-  card?: '';
+  card?: true;
 }
 
 export interface AIResponse {
@@ -114,17 +112,13 @@ export function parseAIResponse(text: string): AIResponse {
       result.undoIndexes.push(parseInt(match[1], 10));
     }
 
-    // Parse [card:userId] hoặc [card] - gửi danh thiếp
-    // POLICY (Phase 2+): Bot chỉ gửi danh thiếp CÁ NHÂN của bot. Field `card` luôn là ''
-    // (parser nuốt tag [card:N] nhưng KHÔNG truyền userId vào AIMessage — sendCard() sẽ
-    // luôn gửi danh thiếp của bot, bất kể AI hallucinate [card:userId] nào).
-    // Regex không capture \d+ nữa — defense-in-depth ở sendCard().
-    for (const _match of fixedText.matchAll(/\[card(?::\d+)?\]/gi)) {
+    // Parse [card] - gửi danh thiếp cá nhân của bot. Không hỗ trợ [card:userId].
+    for (const _match of fixedText.matchAll(/\[card\]/gi)) {
       result.messages.push({
         text: '',
         sticker: '',
         quoteIndex: -1,
-        card: '', // rỗng = gửi card của bot (policy)
+        card: true,
       });
     }
 
@@ -135,7 +129,7 @@ export function parseAIResponse(text: string): AIResponse {
       .replace(/\[quote:-?\d+\][\s\S]*?\[\/quote\]\s*[^[]*?(?=\[|$)/gi, '') // Bao gồm text sau [/quote]
       .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, '')
       .replace(/\[undo:-?\d+\]/gi, '')
-      .replace(/\[card(?::\d+)?\]/gi, '') // [card] hoặc [card:userId] đều bị strip (policy)
+      .replace(/\[card\]/gi, '')
       .trim();
 
     // Nếu có text thuần, thêm vào messages đầu tiên

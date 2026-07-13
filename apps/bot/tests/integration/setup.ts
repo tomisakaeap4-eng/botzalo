@@ -32,7 +32,6 @@ export const TEST_CONFIG = {
 // API Keys validation
 export const API_KEYS = {
   gemini: process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_1,
-  giphy: process.env.GIPHY_API_KEY,
   edgeTts: true, // Không cần API key, dùng Microsoft Edge TTS service
   zaloCredentials: process.env.ZALO_CREDENTIALS_BASE64,
 };

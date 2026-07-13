@@ -35,9 +35,26 @@ export {
   getPaginationConfig,
   loadOldMessages,
 } from './historyLoader.js';
+// Handoff generator (used by historyStore + history.api.ts + tests)
+// NOTE: HIDDEN_HANDOFF_ACK_PREFIX không re-export — detection dùng chung HIDDEN_HANDOFF_PREFIX
+// (ack text bắt đầu bằng `[HIDDEN_HANDOFF]_ACK` vẫn match `startsWith('[HIDDEN_HANDOFF]')`).
+export {
+  buildHiddenHandoffAck,
+  buildHiddenHandoffContent,
+  formatHistoryForAI,
+  generateHandoffDoc,
+  HIDDEN_HANDOFF_PREFIX,
+  isHiddenHandoffContent,
+  loadHandoffSkill,
+  resetHandoffDocStubForTesting,
+  resetHandoffSkillCacheForTesting,
+  resetHandoffStateForTesting,
+  setHandoffDocStubForTesting,
+} from './handoffGenerator.js';
 // History store (main exports)
 export {
   clearHistory,
+  compactHistoryWithHandoff,
   getCachedTokenCount,
   getHistory,
   getRawHistory,

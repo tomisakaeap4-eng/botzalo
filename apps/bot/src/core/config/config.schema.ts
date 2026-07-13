@@ -154,6 +154,24 @@ export const HistoryConfigSchema = z.object({
   maxTrimAttempts: z.coerce.number().min(10).default(50),
   maxContextTokens: z.coerce.number().min(10000).default(300000),
   estimatedCharsPerToken: z.coerce.number().min(1).default(4),
+  // Khi history vượt maxContextTokens → gọi AI với skills/handoff.md để tóm tắt.
+  // AI phản hồi → lưu thành [HIDDEN_HANDOFF] (tin nhắn đầu tiên ẩn) trong history kế tiếp.
+  handoff: z
+    .object({
+      enabled: z.boolean().default(true),
+      maxOutputTokens: z.coerce.number().min(500).default(3000),
+      maxRetries: z.coerce.number().min(0).max(10).default(3),
+      baseDelayMs: z.coerce.number().min(100).default(1500),
+      // Path relative-to-cwd; default dùng đường dẫn built-in `apps/bot/skills/handoff.md`
+      skillFile: z.string().optional(),
+    })
+    .optional()
+    .default({
+      enabled: true,
+      maxOutputTokens: 3000,
+      maxRetries: 3,
+      baseDelayMs: 1500,
+    }),
 });
 
 // Database config schema
@@ -293,6 +311,12 @@ export const SettingsSchema = z.object({
     maxTrimAttempts: 50,
     maxContextTokens: 300000,
     estimatedCharsPerToken: 4,
+    handoff: {
+      enabled: true,
+      maxOutputTokens: 3000,
+      maxRetries: 3,
+      baseDelayMs: 1500,
+    },
   }),
   database: DatabaseConfigSchema.optional().default({
     path: 'data/bot.db',

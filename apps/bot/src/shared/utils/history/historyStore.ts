@@ -13,6 +13,12 @@ import { historyRepository } from '../../../infrastructure/database/index.js';
 import { countTokens } from '../tokenCounter.js';
 import { toGeminiContent } from './historyConverter.js';
 import { fetchFullHistory, getPaginationConfig, loadOldMessages } from './historyLoader.js';
+import {
+  buildHiddenHandoffAck,
+  buildHiddenHandoffContent,
+  generateHandoffDoc,
+  HIDDEN_HANDOFF_PREFIX,
+} from './handoffGenerator.js';
 
 // In-memory cache (primary storage for fast access)
 const messageHistory = new Map<string, Content[]>();
@@ -22,7 +28,12 @@ const tokenCache = new Map<string, number>();
 const cacheTimestamp = new Map<string, number>();
 const initializedThreads = new Set<string>();
 const preloadedMessages = new Map<string, any[]>();
+/** Thread đang trong quá trình gọi AI handoff — chặn re-entry khi 2 tin nhắn cùng trigger */
+const compactingThreads = new Set<string>();
 let isPreloaded = false;
+
+/** Min history length để handoff có ý nghĩa — nếu ít hơn, return false (không compact). */
+const HANDOFF_MIN_HISTORY_LENGTH = 4;
 
 /** Coi cache là fresh nếu được set trong vòng 10s — tránh stale sau nhiều turn */
 const CACHE_FRESH_MS = 10_000;
@@ -83,9 +94,17 @@ async function persistToDb(
 }
 
 /**
- * Xóa lịch sử cũ từ từ cho đến khi dưới ngưỡng token.
- * Tận dụng tokenCache khi cache còn fresh (được set từ response.usageMetadata gần đây)
- * → giảm ~50% countTokens API calls, tránh 429 rate-limit khi history dài.
+ * `trimHistoryByTokens` là safety net CHỈ cho runaway memory growth (>2x max tokens).
+ * KHÔNG gọi AI handoff ở đây. Handoff chỉ được trigger EXPLICITLY từ caller
+ * (message.processor.ts) sau khi AI trả lời xong top-level turn (depth=0).
+ *
+ * Lý do tách: nếu để handoff nằm trong save flow, nó có thể fire:
+ *   - TRƯỚC khi AI phản hồi (group no-mention, prefix wrong)
+ *   - GIỮA tool loop (depth > 0 hoặc saveResponseToHistory mid-loop)
+ * Điều này vi phạm semantic continuity — handoff chỉ có ý nghĩa khi AI đã
+ * "thấy" history trước đó và trả lời xong một turn hoàn chỉnh.
+ *
+ * Caller chịu trách nhiệm gọi `compactHistoryWithHandoff` đúng thời điểm.
  */
 async function trimHistoryByTokens(threadId: string): Promise<void> {
   const history = messageHistory.get(threadId) || [];
@@ -96,51 +115,190 @@ async function trimHistoryByTokens(threadId: string): Promise<void> {
   const cacheTs = cacheTimestamp.get(threadId) ?? 0;
   const cacheFresh = cachedTotal != null && Date.now() - cacheTs < CACHE_FRESH_MS;
 
-  // Optimization: dùng cache nếu còn fresh + dưới maxTokens (skip countTokens API call)
+  // Đo token (ưu tiên cache nếu fresh). KHÔNG gọi handoff ở đây.
   let currentTokens: number;
-  if (cacheFresh && cachedTotal! <= maxTokens) {
-    currentTokens = cachedTotal!;
-    debugLog(
-      'HISTORY',
-      `trimHistoryByTokens: using fresh cache=${currentTokens} (≤max=${maxTokens}, age=${Date.now() - cacheTs}ms) — skip countTokens API`,
-    );
+  const emergencyThreshold = maxTokens * 2;
+  if (cacheFresh && cachedTotal != null && cachedTotal <= emergencyThreshold) {
+    currentTokens = cachedTotal;
   } else {
     currentTokens = await countTokens(history);
-  }
-
-  console.log(`[History] Thread ${threadId}: ${currentTokens} tokens (max: ${maxTokens})`);
-  debugLog(
-    'HISTORY',
-    `trimHistoryByTokens: thread=${threadId}, tokens=${currentTokens}, max=${maxTokens}, cacheFresh=${cacheFresh}`,
-  );
-
-  // Fast path: nếu đã dưới max thì không cần trim
-  if (currentTokens <= maxTokens) {
     tokenCache.set(threadId, currentTokens);
     cacheTimestamp.set(threadId, Date.now());
-    return;
   }
 
+  // Emergency safety net chỉ khi vượt 2x max — chỉ soft-trim, không compact.
+  // (Compact được caller trigger riêng sau khi AI turn hoàn tất.)
+  if (currentTokens > emergencyThreshold) {
+    console.warn(
+      `[History] ⚠️ Emergency shift-trim: ${currentTokens} > ${emergencyThreshold} (2x max) for ${threadId} — handoff should be triggered at end of next deep-0 turn`,
+    );
+    debugLog(
+      'HISTORY',
+      `trim: emergency shift-trim ${currentTokens} > ${emergencyThreshold} for ${threadId}`,
+    );
+    await fallbackShiftTrim(threadId, history, maxTokens);
+  }
+}
+/**
+ * Khi history vượt max tokens → gọi AI với skills/handoff.md để tóm tắt cuộc hội thoại.
+ * AI response → wrap thành Content `[HIDDEN_HANDOFF]` (role=user) và REPLACE toàn bộ history.
+ *
+ * **DO NOT CALL từ save flow** (saveToHistory / saveResponseToHistory / saveToolResultToHistory) —
+ * chỉ được gọi **EXPLICITLY** từ message.processor.ts sau khi AI trả lời xong top-level
+ * user turn (depth=0). Lý do: nếu fire trong save flow, có thể trigger trước khi AI phản
+ * hồi (group no-mention, prefix wrong) hoặc GIỮA tool loop, vi phạm semantic continuity.
+ *
+ * Behavior khi được gọi đúng:
+ * - Over max → gọi handoff AI; success → history [user-role hidden doc] DUY NHẤT + replace DB + delete chat session
+ * - Fail sau retry → KHÔNG đụng history; lần user gửi tin tiếp theo caller retry
+ * - Handoff doc mà vẫn over max → rolling summary (transcript strip handoff cũ)
+ * - Concurrent calls → atomic lock (acquire trước await đầu tiên)
+ *
+ * Returns true nếu compact thành công, false nếu skip/fail.
+ */
+export async function compactHistoryWithHandoff(threadId: string): Promise<boolean> {
+  // Lock acquire TRƯỚC MỌI await — atomic với JS single-threaded model.
+  // Vì length/fast-path cần await (countTokens), không thể check-then-add rồi mới await ở giữa;
+  // nếu làm vậy 2 call concurrent sẽ cùng pass lock rồi cùng gọi AI.
+  if (compactingThreads.has(threadId)) {
+    debugLog('HISTORY', `compactHistory: already compacting ${threadId}, skip`);
+    return false;
+  }
+  const history = messageHistory.get(threadId) || [];
+  if (history.length === 0) return false;
+
+  const maxTokens = CONFIG.maxTokenHistory;
+  const handoffEnabled = CONFIG.history?.handoff?.enabled !== false;
+
+  // Re-check length dưới lock: history có thể đã được 1 thread khác compact về [hidden doc]
+  if (history.length < HANDOFF_MIN_HISTORY_LENGTH) {
+    debugLog(
+      'HISTORY',
+      `compactHistory: skip (len=${history.length} < ${HANDOFF_MIN_HISTORY_LENGTH})`,
+    );
+    return false;
+  }
+
+  compactingThreads.add(threadId);
+  try {
+    // Đo token hiện tại (ưu tiên cache fresh)
+    const cachedTotal = tokenCache.get(threadId);
+    const cacheTs = cacheTimestamp.get(threadId) ?? 0;
+    const cacheFresh = cachedTotal != null && Date.now() - cacheTs < CACHE_FRESH_MS;
+    let currentTokens: number;
+    if (cacheFresh && cachedTotal! <= maxTokens) {
+      currentTokens = cachedTotal!;
+    } else {
+      currentTokens = await countTokens(history);
+    }
+
+    console.log(
+      `[History] Thread ${threadId}: ${currentTokens} tokens (max: ${maxTokens}) — check handoff`,
+    );
+    debugLog(
+      'HISTORY',
+      `compactHistory: thread=${threadId}, tokens=${currentTokens}, max=${maxTokens}, handoffEnabled=${handoffEnabled}`,
+    );
+
+    // Fast path: dưới max thì không cần làm gì
+    if (currentTokens <= maxTokens) {
+      tokenCache.set(threadId, currentTokens);
+      cacheTimestamp.set(threadId, Date.now());
+      return false;
+    }
+
+    // Handoff disabled → fallback cũ (shift oldest) để không kẹt bot
+    if (!handoffEnabled) {
+      debugLog('HISTORY', `compactHistory: handoff disabled, fallback to shift trim`);
+      return fallbackShiftTrim(threadId, history, maxTokens);
+    }
+
+    const handoffDoc = await generateHandoffDoc(history);
+    if (!handoffDoc) {
+      // Fail → không đụng history; caller retry lần sau
+      console.warn(
+        `[History] ⚠️ Handoff failed for ${threadId} — leaving history untouched, will retry later`,
+      );
+      debugLog('HISTORY', `compactHistory: handoff AI returned empty for ${threadId}`);
+      invalidateTokenCache(threadId);
+      return false;
+    }
+
+    // Build hidden handoff content + phantom model ack để preserve Gemini SDK role
+    // alternation (xem buildHiddenHandoffAck để biết lý do critical).
+    const handoffContent = buildHiddenHandoffContent(handoffDoc);
+    const handoffAck = buildHiddenHandoffAck();
+    const newHistory = [handoffContent, handoffAck];
+    const newRaw = [
+      { isSelf: false, isHandoff: true, data: { content: handoffDoc } },
+      { isSelf: true, isHandoff: true, data: { content: '[acknowledged]' } },
+    ];
+
+    messageHistory.set(threadId, newHistory);
+    rawMessageHistory.set(threadId, newRaw);
+
+    // Persist toàn bộ DB: xoá cũ, insert cả handoff doc + ack (2 rows, alternating roles)
+    try {
+      const newRows: Array<{ role: 'user' | 'model'; parts: any[] }> = [
+        { role: 'user', parts: (handoffContent.parts ?? []) as any[] },
+        { role: 'model', parts: (handoffAck.parts ?? []) as any[] },
+      ];
+      await historyRepository.replaceHistory(threadId, newRows);
+    } catch (err) {
+      debugLog('HISTORY', `replaceHistory DB error (memory already updated): ${err}`);
+    }
+
+    // QUAN TRỌNG: xoá chat session để next call tạo fresh session với history mới
+    deleteChatSession(threadId);
+
+    // Token cache reset — history giờ rất nhỏ
+    tokenCache.set(threadId, 0);
+    cacheTimestamp.set(threadId, 0);
+
+    const newTokens = await countTokens(newHistory);
+    console.log(
+      `[History] 🔄 Handoff compacted: ${history.length} msgs → 1 hidden doc + 1 ack (${newTokens} tokens)`,
+    );
+    debugLog('HISTORY', `compactHistory: success for ${threadId}, newTokens=${newTokens}`);
+    return true;
+  } finally {
+    compactingThreads.delete(threadId);
+  }
+}
+
+/**
+ * Fallback: shift() oldest messages như logic cũ khi handoff disabled hoặc transcript rỗng.
+ * Returns true nếu đã trim ≥1 message.
+ */
+async function fallbackShiftTrim(
+  threadId: string,
+  history: Content[],
+  maxTokens: number,
+): Promise<boolean> {
+  if (history.length <= 2) return false;
   const rawHistory = rawMessageHistory.get(threadId) || [];
   let trimCount = 0;
+  let currentTokens = await countTokens(history);
   const maxTrimAttempts = CONFIG.history?.maxTrimAttempts ?? 50;
-
   while (currentTokens > maxTokens && history.length > 2 && trimCount < maxTrimAttempts) {
     history.shift();
     rawHistory.shift();
     trimCount++;
-
     if (trimCount % 5 === 0 || history.length <= 2) {
       currentTokens = await countTokens(history);
       console.log(`[History] Trimmed ${trimCount} messages -> ${currentTokens} tokens`);
     }
   }
-
   messageHistory.set(threadId, history);
   rawMessageHistory.set(threadId, rawHistory);
   tokenCache.set(threadId, currentTokens);
   cacheTimestamp.set(threadId, Date.now());
+  return trimCount > 0;
 }
+
+/**
+ * Preload tất cả tin nhắn cũ từ Zalo khi bot start
+ */
 
 /**
  * Preload tất cả tin nhắn cũ từ Zalo khi bot start
@@ -217,10 +375,40 @@ export async function initThreadHistory(api: any, threadId: string, type: number
 
   // Thử load từ database trước (nếu được bật)
   if (CONFIG.historyLoader?.loadFromDb !== false) {
-    const dbHistory = await historyRepository.getHistoryForAI(threadId);
+    // Cast lên Content[] ngay tại boundary (DB rows narrow role='user'|'model' nhưng
+    // Content.role trong @google/genai là string) — push/pop sau này hoạt động tự nhiên,
+    // không phải cast-launder-and-mismatch nhiều chỗ.
+    const dbHistory = (await historyRepository.getHistoryForAI(threadId)) as Content[];
     if (dbHistory.length > 0) {
+      // Migration cho legacy single-row handoff records (từ version trước khi phantom ack được thêm).
+      // Nếu DB có đúng 1 row user-role bắt đầu bằng `[HIDDEN_HANDOFF]`, append phantom ack in-memory + persist
+      // để tránh Gemini SDK reject `[user, user]` consecutive turns ở tin nhắn kế tiếp.
+      if (dbHistory.length === 1) {
+        const single = dbHistory[0]!;  // narrow từ `T | undefined` (TS array indexing)
+        const singleText = (single.parts?.[0] as { text?: string } | undefined)?.text ?? '';
+        if (
+          single.role === 'user' &&
+          typeof singleText === 'string' &&
+          singleText.startsWith(HIDDEN_HANDOFF_PREFIX)
+        ) {
+          const ack = buildHiddenHandoffAck();
+          dbHistory.push(ack);
+          try {
+            await historyRepository.replaceHistory(threadId, [
+              { role: 'user', parts: (single.parts ?? []) as any[] },
+              { role: 'model', parts: (ack.parts ?? []) as any[] },
+            ]);
+            console.log(
+              `[History] 🔧 Patch legacy single-row handoff → 2 rows (user + model ack) for ${threadId}`,
+            );
+            debugLog('HISTORY', `Patched legacy handoff: ${threadId}`);
+          } catch (err) {
+            debugLog('HISTORY', `Legacy handoff patch DB error: ${err}`);
+          }
+        }
+      }
       console.log(`[History] 📚 Thread ${threadId}: Loaded ${dbHistory.length} messages from DB`);
-      messageHistory.set(threadId, dbHistory as Content[]);
+      messageHistory.set(threadId, dbHistory);
       await trimHistoryByTokens(threadId);
       return;
     }

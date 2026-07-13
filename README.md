@@ -32,6 +32,7 @@ Bot lắng nghe tin nhắn Zalo qua `zca-js`, chạy qua Google Gemini (mặc đ
 - 💤 **Sleep mode** tự động offline theo giờ (`bot.sleepMode`)
 - 🔧 **Maintenance mode** với message tùy chỉnh (`bot.maintenanceMode`)
 - 🛌 **Cloud Debug**: bot đọc và xử lý tin nhắn tự gửi có prefix `#bot` (`bot.cloudDebug.prefix`)
+- 🧩 **Handoff compaction**: **chỉ** trigger sau khi AI trả lời xong 1 top-level user turn (depth=0, kể cả sau khi tool loop đã kết thúc). Khi history vượt `bot.maxTokenHistory` → gọi AI với `apps/bot/skills/handoff.md` để tóm tắt, response gán thành `[HIDDEN_HANDOFF]` (user-role, tin nhắn đầu tiên ẩn) thay cho toản bộ history + invalidate chat session. AI kế tiếp thấy summary làm context đầu tiên để tiếp tục hỗ trợ user. Fail AI → giữ nguyên history, retry ở user turn tiếp theo. **KHÔNG fire** khi: group no-mention, prefix sai, saveToHistory mid-flow, saveResponseToHistory/saveToolResultToHistory trong tool loop, signal aborted, hoặc trước khi AI phản hồi.
 
 ---
 
@@ -134,6 +135,7 @@ Validate bằng `apps/bot/src/core/config/config.schema.ts` (Zod). Thứ tự se
 | `messageSender.{mediaDelayMs,chunkDelayMs}`              | Delay khi gửi media / chunk                                                   | `300` / `400`                                         |
 | `markdown.{mermaidTimeoutMs,groupMediaSizeLimitMB}`      | Render mermaid                                                               | `30000` / `1`                                         |
 | `history.{maxTrimAttempts,maxContextTokens,estimatedCharsPerToken}` | Trim context khi quá dài                                         | `50` / `300000` / `4`                                 |
+| `history.handoff.{enabled,maxOutputTokens,maxRetries,baseDelayMs,skillFile}` | Compact bằng `handoff` AI (skill `apps/bot/skills/handoff.md`) khi vượt `bot.maxTokenHistory`. AI response → `[HIDDEN_HANDOFF]` injection làm first hidden message. | `true` / `3000` / `3` / `1500` / unset (built-in `apps/bot/skills/handoff.md`) |
 | `database.{path,cleanupIntervalMs,cacheSize}`            | SQLite path / cleanup                                                        | `"data/bot.db"` / `3600000` / `10000`                 |
 | `responseHandler.{reactionDelayMs,chunkDelayMs,stickerDelayMs,cardDelayMs,messageDelayMinMs,messageDelayMaxMs,imageDelayMs}` | Delay khi gửi response | `300` / `300` / `800` / `500` / `500` / `1000` / `500` |
 | `websocketConnectTimeoutMs`                              | Đợi WS connect                                                               | `2000`                                                |

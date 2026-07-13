@@ -13,6 +13,7 @@ import {
 import { PROMPTS } from '../../../infrastructure/ai/providers/gemini/prompts.js';
 import { ThreadType } from '../../../infrastructure/messaging/zalo/zalo.service.js';
 import {
+  compactHistoryWithHandoff,
   getHistory,
   saveResponseToHistory,
   saveToHistory,
@@ -169,6 +170,19 @@ export async function handleMixedContent(
       signal,
       0,
     );
+
+    // Handoff compaction FIRE ONLY HERE — sau khi AI trả lời xong top-level turn.
+    // Đây là điểm duy nhất được phép trigger handoff theo rule "chỉ tạo handoff khi AI
+    // đã completed answering 1 user message". Save flow (saveToHistory / saveResponse
+    // / saveToolResult) KHÔNG được trigger handoff vì có thể fire mid-tool-loop hoặc
+    // trước khi AI phản hồi (group no-mention, prefix wrong).
+    if (!signal?.aborted) {
+      try {
+        await compactHistoryWithHandoff(threadId);
+      } catch (err) {
+        debugLog('MIXED', `Handoff compaction error (non-fatal): ${err}`);
+      }
+    }
   } catch (e: any) {
     if (e.message === 'Aborted' || signal?.aborted) {
       return debugLog('MIXED', 'Aborted during processing');

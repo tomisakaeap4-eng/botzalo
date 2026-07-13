@@ -4,8 +4,36 @@
 
 import { count, desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
+import { isHiddenHandoffContent } from '../../shared/utils/history/history.js';
 import { getDatabase, getSqliteDb } from '../database/connection.js';
 import { history } from '../database/schema.js';
+
+/** Extract plain text từ content JSON hoặc raw string; trả về 'parsed object' để isHidden check. */
+function parseContentParts(content: string): { parts: Array<Record<string, unknown>>; text: string } {
+  try {
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed)) {
+      const parts = parsed as Array<Record<string, unknown>>;
+      const text = (parts.find((p) => typeof p?.text === 'string')?.text as string) ?? '';
+      return { parts, text };
+    }
+    if (parsed && typeof parsed === 'object' && typeof (parsed as any).text === 'string') {
+      return { parts: [{ text: (parsed as any).text }], text: (parsed as any).text };
+    }
+  } catch {
+    // Plain text fallback
+  }
+  return { parts: [{ text: content }], text: content };
+}
+
+/** Build isHidden annotation: chỉ hidden khi Content role + parts chứa prefix. */
+function buildIsHidden(role: string, parts: Array<Record<string, unknown>>): boolean {
+  try {
+    return isHiddenHandoffContent({ role: role as 'user' | 'model', parts: parts as any });
+  } catch {
+    return false;
+  }
+}
 
 export const historyApi = new Hono();
 
@@ -40,9 +68,15 @@ historyApi.get('/', async (c) => {
     }
     const [total] = await countQuery;
 
+    // Annotate hidden handoff messages cho frontend render khác biệt
+    const annotated = data.map((r) => ({
+      ...r,
+      isHidden: buildIsHidden(r.role, parseContentParts(r.content).parts),
+    }));
+
     return c.json({
       success: true,
-      data,
+      data: annotated,
       pagination: {
         page,
         limit,
@@ -102,7 +136,12 @@ historyApi.get('/thread/:threadId', async (c) => {
       .orderBy(desc(history.timestamp))
       .limit(limit);
 
-    return c.json({ success: true, data: data.reverse() }); // Reverse để oldest first
+    const reversed = data.reverse(); // oldest first
+    const annotated = reversed.map((r) => ({
+      ...r,
+      isHidden: buildIsHidden(r.role, parseContentParts(r.content).parts),
+    }));
+    return c.json({ success: true, data: annotated });
   } catch (e) {
     return c.json({ success: false, error: (e as Error).message }, 500);
   }

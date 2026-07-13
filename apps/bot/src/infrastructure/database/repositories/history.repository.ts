@@ -106,15 +106,19 @@ export class HistoryRepository {
 
   /**
    * Cơ chế Pruning - Xóa tin nhắn cũ khi vượt quá giới hạn token
+   * NOTE: Compaction chính giờ do `compactHistoryWithHandoff` ở historyStore xử lý.
+   * pruneIfNeeded ở đây chỉ là safety net cuối cùng — kích hoạt khi 1 tin nhắn đơn lẻ
+   * vượt ~2x maxContextTokens (vd: user paste 600k tokens text) và handoff bị tắt/fail.
    */
   private async pruneIfNeeded(threadId: string): Promise<void> {
     const records = await this.getHistory(threadId);
 
-    // Ước tính tổng token
+    // Ngưỡng emergency: 2x max (handoff đáng lẽ đã xử lý trước đó)
+    const emergency = getMaxContextTokens() * 2;
     const totalChars = records.reduce((sum, r) => sum + r.content.length, 0);
     const estimatedTokens = Math.ceil(totalChars / getEstimatedCharsPerToken());
 
-    if (estimatedTokens > getMaxContextTokens()) {
+    if (estimatedTokens > emergency) {
       // Xóa 20% tin nhắn cũ nhất
       const deleteCount = Math.ceil(records.length * 0.2);
       const oldestIds = records.slice(0, deleteCount).map((r) => r.id);
@@ -125,9 +129,39 @@ export class HistoryRepository {
 
       debugLog(
         'HISTORY',
-        `Pruned ${deleteCount} old messages for ${threadId} (tokens: ${estimatedTokens})`,
+        `Emergency-pruned ${deleteCount} old messages for ${threadId} (tokens: ${estimatedTokens})`,
       );
     }
+  }
+
+  /**
+   * Atomically replace toàn bộ history của thread với contents mới.
+   * Dùng cho handoff compaction — xoá tất cả, insert nguyên khối mới.
+   * Empty array = chỉ xoá (không insert gì).
+   */
+  async replaceHistory(
+    threadId: string,
+    newHistory: Array<{ role: 'user' | 'model'; parts: any[] }>,
+  ): Promise<void> {
+    if (!threadId) return;
+    const recorded: number = Date.now();
+    await this.db.transaction(async (tx) => {
+      await tx.delete(history).where(eq(history.threadId, threadId));
+      if (newHistory.length === 0) return;
+      await tx.insert(history).values(
+        newHistory.map((content, idx) => ({
+          threadId,
+          role: content.role,
+          content: JSON.stringify(content.parts),
+          // Spread `idx` ms để order asc không trùng nếu insert cùng lúc
+          timestamp: new Date(recorded + idx),
+        })),
+      );
+    });
+    debugLog(
+      'HISTORY',
+      `Replaced history for ${threadId} with ${newHistory.length} message(s)`,
+    );
   }
 
   /**

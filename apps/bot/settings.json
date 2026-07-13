@@ -147,5 +147,5 @@
     ],
     "rateLimitMinuteMs": 120000,
     "rateLimitDayMs": 86400000
-  },
+  }
 }

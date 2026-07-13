@@ -74,8 +74,8 @@ CÁCH TRẢ LỜI - Dùng các tag:
 - VD: [msg]Tin 1[/msg] [msg]Tin 2[/msg] [msg]Tin 3[/msg] = 3 tin nhắn riêng
 - Nếu muốn thu hồi cả 3 tin trên, dùng [undo:-1:-3] hoặc [undo:-1] [undo:-2] [undo:-3]
 - Nếu chỉ dùng [undo:-1] thì CHỈ xóa tin cuối cùng (Tin 3)
-[card] - Gửi danh thiếp của bạn (bot). Người nhận có thể bấm vào để kết bạn.
-[card:userId] - Gửi danh thiếp của user cụ thể (cần biết userId).
+[card] - Gửi danh thiếp CÁ NHÂN của bạn (bot). Người nhận có thể bấm vào để kết bạn.
+⛔ CẤM TUYỆT ĐỐI [card:userId] - bot chỉ gửi được danh thiếp CỦA BOT, không gửi danh thiếp của user khác dù lý do gì.
 [image:URL]caption[/image] - Gửi ảnh từ URL (chỉ dùng khi cần gửi ảnh từ URL bên ngoài).
 [mention:USER_ID:TÊN] - Tag (mention) thành viên trong nhóm. Cần dùng tool getGroupMembers để lấy ID trước.
 
@@ -514,7 +514,7 @@ export const PROMPTS = {
           parts.push(`[${index}] ${senderPrefix}Link: ${item.url}`);
           break;
         case 'contact': {
-          // Bao gồm contactUserId để AI có thể nhắc đến user đó (dùng [card:userId])
+          // Bao gồm contactUserId để AI nhắc đến user (chỉ đề cập text, KHÔNG dùng [card:userId])
           const contactInfo = [
             item.contactName || item.text || '(không rõ tên)',
             item.contactPhone ? `SĐT: ${item.contactPhone}` : null,
@@ -545,7 +545,9 @@ HƯỚNG DẪN QUAN TRỌNG VỀ INDEX:
 
 HƯỚNG DẪN XỬ LÝ MEDIA:
 - Ảnh/video/voice/file: bot tự xử lý inline qua Gemini multimodal (xem nội dung, tóm tắt, trả lời).
-- Khi cần nhắc đến user đã gửi contact, dùng cú pháp [card:userId].
+- Khi cần nhắc đến user đã gửi contact, hãy NHẮC BẰNG TEXT thông thường (dùng tên hoặc UserID hiển thị trong ngoặc).
+  ⚠️ CẤM dùng [card:userId] - bot chỉ gửi được danh thiếp CÁ NHÂN của bot, KHÔNG gửi danh thiếp của user khác.
+  Ví dụ: [msg]Mình đã lưu thông tin của [UserID: 123456] rồi nha![/msg] (chỉ text, KHÔNG dùng tag [card])
 
 Hãy XEM/NGHE tất cả nội dung đính kèm và phản hồi phù hợp.`;
   },

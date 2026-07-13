@@ -100,8 +100,78 @@ describe('Stream Callbacks Behavior', () => {
     };
 
     const callbacks = createStreamCallbacks(mockApi, 'test-thread', undefined, undefined, true);
-    
+
     // Message với tool tag sẽ được strip
     await callbacks.onMessage?.('Hello [tool:test] World');
+  });
+});
+
+describe('Card Policy (Phase 2+)', () => {
+  /**
+   * REGRESSION GUARD: Bot chỉ gửi danh thiếp CÁ NHÂN của bot.
+   * Khi AI hallucinate [card:userId] hoặc test truyền userId khác,
+   * `api.sendCard` PHẢI nhận `cardData.userId === bot-uid`, KHÔNG phải user khác.
+   */
+  test('onCard với userId khác vẫn gửi danh thiếp của bot (defense-in-depth)', async () => {
+    let cardDataSent: any = null;
+    const mockApi = {
+      sendMessage: async () => ({}),
+      addReaction: async () => ({}),
+      getStickers: async () => [],
+      sendCard: async (cardData: any) => {
+        cardDataSent = cardData;
+        return {};
+      },
+      getContext: () => ({ uid: 'bot-uid-999' }),
+    };
+
+    const callbacks = createStreamCallbacks(mockApi, 'test-thread');
+
+    // AI hallucinate [card:123456] (user khác) — phải bị bỏ qua
+    await callbacks.onCard?.('123456');
+
+    // Đảm bảo KHÔNG gửi danh thiếp user 123456
+    expect(cardDataSent).not.toBeNull();
+    expect(cardDataSent.userId).toBe('bot-uid-999');
+  });
+
+  test('onCard với userId = bot uid cũng gửi danh thiếp bot (idempotent)', async () => {
+    let cardDataSent: any = null;
+    const mockApi = {
+      sendMessage: async () => ({}),
+      addReaction: async () => ({}),
+      getStickers: async () => [],
+      sendCard: async (cardData: any) => {
+        cardDataSent = cardData;
+        return {};
+      },
+      getContext: () => ({ uid: 'bot-uid-999' }),
+    };
+
+    const callbacks = createStreamCallbacks(mockApi, 'test-thread');
+
+    await callbacks.onCard?.('bot-uid-999');
+
+    expect(cardDataSent).toEqual({ userId: 'bot-uid-999' });
+  });
+
+  test('onCard với undefined (không có userId) cũng gửi danh thiếp bot', async () => {
+    let cardDataSent: any = null;
+    const mockApi = {
+      sendMessage: async () => ({}),
+      addReaction: async () => ({}),
+      getStickers: async () => [],
+      sendCard: async (cardData: any) => {
+        cardDataSent = cardData;
+        return {};
+      },
+      getContext: () => ({ uid: 'bot-uid-999' }),
+    };
+
+    const callbacks = createStreamCallbacks(mockApi, 'test-thread');
+
+    await callbacks.onCard?.(undefined);
+
+    expect(cardDataSent).toEqual({ userId: 'bot-uid-999' });
   });
 });

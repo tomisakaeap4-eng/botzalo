@@ -55,18 +55,37 @@ async function sendTextWithChunking(
 
 async function sendCard(api: any, userId: string | undefined, threadId: string) {
   try {
-    // Nếu không có userId, gửi card của bot
-    const targetUserId = userId || String(api.getContext().uid);
-    debugLog('CARD', `Sending card for userId=${targetUserId}`);
+    // POLICY (Phase 2+): Bot chỉ gửi danh thiếp CÁ NHÂN của bot — KHÔNG gửi danh thiếp của user khác.
+    // Tham số `userId` được KEEP cho backward-compat với parser, nhưng LUÔN bị bỏ qua:
+    // → targetUserId luôn là uid của bot (api.getContext().uid).
+    // → Ngay cả khi AI hallucinate [card:123456] (id của user khác), API vẫn gửi danh thiếp của bot.
+    // ⚠️ FAIL-FAST: Nếu không lấy được uid của bot từ context, KHÔNG gửi card (tránh data malformed).
+    const ctx = api.getContext?.();
+    if (!ctx?.uid) {
+      debugLog(
+        'CARD',
+        `POLICY: api.getContext().uid missing — ABORT sendCard (tránh gửi danh thiếp malformed với userId giả)`,
+      );
+      console.log(`[Bot] ⚠️ Skip card: thiếu bot uid context`);
+      return;
+    }
+    const targetUserId = String(ctx.uid);
+    if (userId && userId !== targetUserId) {
+      debugLog(
+        'CARD',
+        `POLICY: yêu cầu gửi danh thiếp user khác (userId=${userId}), bị BỎ QUA — gửi danh thiếp CÁ NHÂN của bot`,
+      );
+    }
+    debugLog('CARD', `Sending bot's own card (uid=${targetUserId})`);
     const threadType = getThreadType(threadId);
 
     const cardData = { userId: targetUserId };
     const result = await api.sendCard(cardData, threadId, threadType);
     logZaloAPI('sendCard', { cardData, threadId }, result);
-    console.log(`[Bot] 📇 Đã gửi danh thiếp!`);
+    console.log(`[Bot] 📇 Đã gửi danh thiếp của bot!`);
     logMessage('OUT', threadId, { type: 'card', userId: targetUserId });
   } catch (e: any) {
-    logZaloAPI('sendCard', { userId, threadId }, null, e);
+    logZaloAPI('sendCard', { userId: threadId }, null, e);
     logError('sendCard', e);
   }
 }
@@ -311,9 +330,11 @@ export async function sendResponse(
     }
 
     if (msg.card !== undefined) {
+      // POLICY: msg.card (giờ là literal '') bị BỎ QUA — sendCard() luôn gửi danh thiếp của bot.
+      // Không truyền msg.card vì type literal '' không có ý nghĩa làm userId; hard-code undefined.
       const cardDelay = CONFIG.responseHandler?.cardDelayMs ?? 500;
       if (msg.text || msg.sticker) await new Promise((r) => setTimeout(r, cardDelay));
-      await sendCard(api, msg.card || undefined, threadId);
+      await sendCard(api, undefined, threadId);
     }
 
     if (i < response.messages.length - 1) {

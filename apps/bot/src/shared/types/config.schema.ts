@@ -6,7 +6,13 @@ export interface AIMessage {
   text: string;
   sticker: string;
   quoteIndex: number;
-  card?: string; // userId để gửi danh thiếp (rỗng = gửi card của bot)
+  /**
+   * Presence flag (Phase 2 policy): LUÔN là chuỗi rỗng '' hoặc undefined.
+   * Bot KHÔNG gửi danh thiếp của user khác — sendCard() luôn gửi danh thiếp CÁ NHÂN của bot
+   * bất kể AI có hallucinate `[card:userId]` hay không.
+   * Type literal `'' | undefined` giúp compiler enforce policy: cố set giá trị khác rỗng → TS error.
+   */
+  card?: '';
 }
 
 export interface AIResponse {
@@ -109,13 +115,16 @@ export function parseAIResponse(text: string): AIResponse {
     }
 
     // Parse [card:userId] hoặc [card] - gửi danh thiếp
-    const cardMatches = fixedText.matchAll(/\[card(?::(\d+))?\]/gi);
-    for (const match of cardMatches) {
+    // POLICY (Phase 2+): Bot chỉ gửi danh thiếp CÁ NHÂN của bot. Field `card` luôn là ''
+    // (parser nuốt tag [card:N] nhưng KHÔNG truyền userId vào AIMessage — sendCard() sẽ
+    // luôn gửi danh thiếp của bot, bất kể AI hallucinate [card:userId] nào).
+    // Regex không capture \d+ nữa — defense-in-depth ở sendCard().
+    for (const _match of fixedText.matchAll(/\[card(?::\d+)?\]/gi)) {
       result.messages.push({
         text: '',
         sticker: '',
         quoteIndex: -1,
-        card: match[1] || '', // rỗng = gửi card của bot
+        card: '', // rỗng = gửi card của bot (policy)
       });
     }
 
@@ -126,7 +135,7 @@ export function parseAIResponse(text: string): AIResponse {
       .replace(/\[quote:-?\d+\][\s\S]*?\[\/quote\]\s*[^[]*?(?=\[|$)/gi, '') // Bao gồm text sau [/quote]
       .replace(/\[msg\][\s\S]*?\[\/msg\]/gi, '')
       .replace(/\[undo:-?\d+\]/gi, '')
-      .replace(/\[card(?::\d+)?\]/gi, '')
+      .replace(/\[card(?::\d+)?\]/gi, '') // [card] hoặc [card:userId] đều bị strip (policy)
       .trim();
 
     // Nếu có text thuần, thêm vào messages đầu tiên

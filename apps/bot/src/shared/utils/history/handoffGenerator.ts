@@ -136,9 +136,11 @@ export function formatHistoryForAI(history: Content[]): string {
   return lines.join('\n\n');
 }
 
-/** Build prefix note (để AI biết đây là tóm tắt context) */
-function buildHandoffHeader(maxOutputTokens: number): string {
-  return `[Mô tả: Tóm tắt tự động cuộc hội thoại trước để AI tiếp tục hỗ trợ. KHÔNG lưu file - system sẽ capture response thẳng vào history làm tin nhắn đầu tiên ẩn.]\n\nHãy output một handoff document gọn (< ${maxOutputTokens} tokens) với các sections rõ ràng: User Goal / Decisions Made / Pending Actions / Key Context.\n\n`;
+/** Build prefix note (để AI biết đây là tóm tắt context).
+ * KHÔNG giới hạn token output — để AI phản hồi đầy đủ. Skill body yêu cầu AI viết
+ * đủ 4 sections, nếu user có history cực dài thì truncate xuống còn ~3000 words nếu cần. */
+function buildHandoffHeader(): string {
+  return `[Mô tả: Tóm tắt tự động cuộc hội thoại trước để AI tiếp tục hỗ trợ. KHÔNG lưu file - system sẽ capture response thẳng vào history làm tin nhắn đầu tiên ẩn.]\n\nHãy output một handoff document đầy đủ, có cấu trúc rõ ràng theo các sections: User Goal / Decisions Made / Pending Actions / Key Context. Đừng cắt ngắn — cần đủ để AI kế tiếp tiếp tục hỗ trợ user mà không mất context.\n\n`;
 }
 
 /** Build Content user-role object đại diện cho tin nhắn ẩn đầu tiên trong history.
@@ -239,10 +241,9 @@ export async function generateHandoffDoc(
   }
 
   const skillBody = await loadHandoffSkill();
-  const maxOutputTokens = CONFIG.history?.handoff?.maxOutputTokens ?? 3000;
   const maxRetries = opts?.maxRetries ?? CONFIG.history?.handoff?.maxRetries ?? 3;
   const baseDelayMs = opts?.baseDelayMs ?? CONFIG.history?.handoff?.baseDelayMs ?? 1500;
-  const prompt = buildHandoffHeader(maxOutputTokens) + transcript;
+  const prompt = buildHandoffHeader() + transcript;
 
   const ai = getAI();
 
@@ -257,8 +258,7 @@ export async function generateHandoffDoc(
           temperature: 0.3,
           // Skill content làm system instruction → AI đóng vai "handoff writer"
           systemInstruction: skillBody,
-          // Tight token budget
-          maxOutputTokens,
+          // KHÔNG override maxOutputTokens — để AI viết đầy đủ handoff doc, không bị cắt.
         },
       });
       const txt = (response?.text ?? '').trim();

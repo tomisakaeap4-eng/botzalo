@@ -159,7 +159,6 @@ export const HistoryConfigSchema = z.object({
   handoff: z
     .object({
       enabled: z.boolean().default(true),
-      maxOutputTokens: z.coerce.number().min(500).default(3000),
       maxRetries: z.coerce.number().min(0).max(10).default(3),
       baseDelayMs: z.coerce.number().min(100).default(1500),
       // Path relative-to-cwd; default dùng đường dẫn built-in `apps/bot/skills/handoff.md`
@@ -168,7 +167,6 @@ export const HistoryConfigSchema = z.object({
     .optional()
     .default({
       enabled: true,
-      maxOutputTokens: 3000,
       maxRetries: 3,
       baseDelayMs: 1500,
     }),
@@ -313,7 +311,6 @@ export const SettingsSchema = z.object({
     estimatedCharsPerToken: 4,
     handoff: {
       enabled: true,
-      maxOutputTokens: 3000,
       maxRetries: 3,
       baseDelayMs: 1500,
     },
